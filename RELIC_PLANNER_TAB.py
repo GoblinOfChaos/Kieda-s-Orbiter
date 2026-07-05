@@ -3,9 +3,11 @@
 import json
 from pathlib import Path
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
     QTableWidget, QTableWidgetItem, QHeaderView, QListWidget, QSplitter,
+    QCheckBox,
 )
 from column_persistence import apply_saved_widths, remember_widths
 from paths import DATA_DIR
@@ -20,8 +22,9 @@ class RelicPlannerTab(QWidget):
         self._all_parts = []
         self._relics = {}
         self._need = []
-        self._owned = {}
-        self._crafted = set()  # parts ever built/mastered
+        self._owned = {}        # part name → count
+        self._owned_relics = {} # "Era Name" → {owned, vaulted, ...}
+        self._crafted = set()   # parts ever built/mastered
         self._setup_ui()
         self._load()
 
@@ -76,12 +79,23 @@ class RelicPlannerTab(QWidget):
         # Right panel — relic matches
         right = QWidget()
         right_layout = QVBoxLayout(right)
-        right_layout.addWidget(QLabel("Best Relics:"))
-        self._table = QTableWidget(0, 4)
-        self._table.setHorizontalHeaderLabels(["Relic", "Era", "#", "Needed Parts"])
-        for col in range(4):
+
+        filter_row = QHBoxLayout()
+        filter_row.addWidget(QLabel("Best Relics:"))
+        filter_row.addStretch()
+        self._owned_only_cb = QCheckBox("Show owned relics only")
+        self._owned_only_cb.setToolTip(
+            "When checked, only shows relics you currently own at least one of."
+        )
+        self._owned_only_cb.stateChanged.connect(self._compute)
+        filter_row.addWidget(self._owned_only_cb)
+        right_layout.addLayout(filter_row)
+
+        self._table = QTableWidget(0, 6)
+        self._table.setHorizontalHeaderLabels(["Relic", "Era", "Needed", "Owned", "Vaulted", "Needed Parts"])
+        for col in range(6):
             self._table.horizontalHeader().setSectionResizeMode(col, QHeaderView.Interactive)
-        apply_saved_widths(self._table, "relic_planner_table", [200, 90, 90, 300])
+        apply_saved_widths(self._table, "relic_planner_table", [160, 70, 60, 60, 65, 280])
         remember_widths(self._table, "relic_planner_table")
         self._table.setSortingEnabled(True)
         self._table.setEditTriggers(QTableWidget.NoEditTriggers)
@@ -117,6 +131,12 @@ class RelicPlannerTab(QWidget):
             self._crafted = set(json.loads((DATA_DIR / "crafted_parts.json").read_text()))
         except Exception:
             self._crafted = set()
+        try:
+            raw = json.loads((BASE / "owned_relics.json").read_text())
+            # Key format in owned_relics.json is "Era Name" e.g. "Axi A1"
+            self._owned_relics = raw
+        except Exception:
+            self._owned_relics = {}
 
     def _filter_parts(self, text):
         q = text.strip().lower()
@@ -178,31 +198,72 @@ class RelicPlannerTab(QWidget):
             self._table.setRowCount(0)
             self._status.setText("Add parts to your need list.")
             return
+
+        owned_only = self._owned_only_cb.isChecked()
         need_set = set(p.lower() for p in self._need)
         results = []
         for era in ERAS:
             for rname, relic in self._relics.get(era, {}).items():
+                key = f"{era} {rname}"
+                relic_info = self._owned_relics.get(key, {})
+                owned_count = relic_info.get("owned", 0)
+                vaulted = relic_info.get("vaulted", False)
+
+                if owned_only and owned_count == 0:
+                    continue
+
                 matches = []
                 for field in RARITY_FIELDS:
                     part = relic.get(field, "")
                     if part and part.lower() in need_set:
                         matches.append(part)
                 if matches:
-                    results.append((era, rname, len(matches), matches))
-        results.sort(key=lambda r: -r[2])
+                    results.append((era, rname, len(matches), matches, owned_count, vaulted))
+
+        # Sort: owned first, then by match count
+        results.sort(key=lambda r: (-r[4], -r[2]))
+
         self._table.setSortingEnabled(False)
         self._table.setRowCount(len(results))
-        for i, (era, rname, count, matches) in enumerate(results):
-            name_item = QTableWidgetItem(f"{era} {rname}")
+        for i, (era, rname, count, matches, owned_count, vaulted) in enumerate(results):
+            key = f"{era} {rname}"
+            name_item = QTableWidgetItem(key)
             name_item.setData(Qt.UserRole, matches)
             self._table.setItem(i, 0, name_item)
             self._table.setItem(i, 1, QTableWidgetItem(era))
+
             cnt = QTableWidgetItem()
             cnt.setData(Qt.DisplayRole, count)
             self._table.setItem(i, 2, cnt)
-            self._table.setItem(i, 3, QTableWidgetItem(""))
+
+            own_item = QTableWidgetItem()
+            own_item.setData(Qt.DisplayRole, owned_count)
+            self._table.setItem(i, 3, own_item)
+
+            vault_item = QTableWidgetItem("Yes" if vaulted else "No")
+            self._table.setItem(i, 4, vault_item)
+
+            self._table.setItem(i, 5, QTableWidgetItem(""))
+
+            # Colour rows: bright if owned, dim if not, red-tinted if vaulted+unowned
+            if owned_count > 0:
+                row_color = QColor("#0f2e18")   # dark green tint — you have it
+            elif vaulted:
+                row_color = QColor("#2e1010")   # dark red tint — vaulted, can't get
+            else:
+                row_color = QColor("#1a1e2e")   # normal dark — unvaulted but unowned
+            for col in range(6):
+                item = self._table.item(i, col)
+                if item:
+                    item.setBackground(row_color)
+
         self._table.setSortingEnabled(True)
-        self._status.setText(f"{len(results)} relics match your need list.")
+        owned_shown = sum(1 for r in results if r[4] > 0)
+        self._status.setText(
+            f"{len(results)} relics match  ·  "
+            f"{owned_shown} owned  ·  "
+            f"{len(results) - owned_shown} not owned"
+        )
 
     def _on_relic_selection_changed(self):
         row = self._table.currentRow()
