@@ -19,10 +19,10 @@ from pathlib import Path
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QColor, QIcon
 from PySide6.QtWidgets import (
-from paths import DATA_DIR
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QScrollArea, QFrame,
 )
+from paths import DATA_DIR
 
 STATE_FILE = DATA_DIR / "riven-graded.json"
 PREV_STATE_FILE = DATA_DIR / "riven-graded-prev.json"
@@ -50,6 +50,33 @@ GRADE_COLORS = {
     "reroll": REROLL_COLOR,
     "unknown": UNKNOWN_COLOR,
 }
+
+
+CONFIG_FILE = Path.home() / "wfinfo-ng" / "config.json"
+
+
+def _load_config():
+    try:
+        return json.loads(CONFIG_FILE.read_text())
+    except Exception:
+        return {}
+
+
+def _target_screen():
+    """Return the QScreen for the overlay based on config overlay_monitor setting."""
+    screens = QApplication.screens()
+    if not screens:
+        return None
+    cfg = _load_config()
+    monitor = cfg.get("overlay_monitor", "auto")
+    if monitor != "auto":
+        try:
+            idx = int(monitor)
+            if 0 <= idx < len(screens):
+                return screens[idx]
+        except (TypeError, ValueError):
+            pass
+    return QApplication.primaryScreen()
 
 
 def _save_position(x, y):
@@ -209,8 +236,9 @@ class RivenGraderOverlay(QWidget):
         if saved and self._on_screen(saved["x"], saved["y"]):
             self.move(saved["x"], saved["y"])
         else:
-            screen = QApplication.primaryScreen().geometry()
-            self.move(screen.x() + screen.width() - 540, screen.y() + 80)
+            s = _target_screen() or QApplication.primaryScreen()
+            g = s.geometry()
+            self.move(g.x() + g.width() - 540, g.y() + 80)
 
         self.adjustSize()
         self.show()
@@ -294,8 +322,9 @@ class RivenGraderOverlay(QWidget):
         if saved and self._on_screen(saved["x"], saved["y"]):
             self.move(saved["x"], saved["y"])
         else:
-            screen = QApplication.primaryScreen().geometry()
-            self.move(screen.x() + screen.width() - 540, screen.y() + 80)
+            s = _target_screen() or QApplication.primaryScreen()
+            g = s.geometry()
+            self.move(g.x() + g.width() - 540, g.y() + 80)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:

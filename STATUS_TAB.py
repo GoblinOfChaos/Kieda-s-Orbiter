@@ -262,6 +262,101 @@ class StatusTab(QWidget):
         self.btn_rebuild     = _abtn("Rebuild API Helper",       "Pull + rebuild warframe-api-helper from source",           self.rebuild_helper,     3, 1)
         main.addWidget(act_frame)
 
+        # ── Overlay settings card ─────────────────────────────────────────
+        from PySide6.QtWidgets import QComboBox as _CB2
+        ov_frame, ov_body = self._card("📺  OVERLAY DISPLAY", p['accent'])
+        ol = QVBoxLayout(ov_body)
+        ol.setContentsMargins(12, 10, 12, 12)
+        ol.setSpacing(10)
+
+        # Monitor selector row
+        mon_row = QHBoxLayout()
+        mon_lbl = QLabel("Display on:")
+        mon_lbl.setStyleSheet(f"color: {p['fg_dim']}; font-size: 12px; background: transparent;")
+        mon_lbl.setFixedWidth(100)
+        self._monitor_combo = _CB2()
+        self._monitor_combo.setFocusPolicy(Qt.StrongFocus)
+        self._monitor_combo.setMinimumHeight(30)
+        self._monitor_combo.setToolTip(
+            "Which monitor the overlay appears on when first shown.\n"
+            "You can still drag it anywhere — this only sets the starting position.\n"
+            "Use 'Reset Position' to move it back to this monitor's default position."
+        )
+        self._monitor_combo.wheelEvent = lambda e: e.ignore()  # no accidental scroll
+
+        # Populate with current screens
+        from PySide6.QtWidgets import QApplication as _QApp2
+        screens = _QApp2.screens()
+        self._monitor_combo.addItem("Auto (follow Warframe window)", "auto")
+        for i, s in enumerate(screens):
+            g = s.geometry()
+            name = s.name() or f"Monitor {i+1}"
+            primary = " — Primary" if s == _QApp2.primaryScreen() else ""
+            self._monitor_combo.addItem(
+                f"Monitor {i+1}: {name}  {g.width()}×{g.height()}{primary}", i
+            )
+
+        # Load saved value
+        try:
+            _cfg = json.loads(Path(WFINFO_DIR / "config.json").read_text())
+            saved_mon = _cfg.get("overlay_monitor", "auto")
+            for idx in range(self._monitor_combo.count()):
+                if self._monitor_combo.itemData(idx) == saved_mon:
+                    self._monitor_combo.setCurrentIndex(idx)
+                    break
+        except Exception:
+            pass
+
+        mon_row.addWidget(mon_lbl)
+        mon_row.addWidget(self._monitor_combo, stretch=1)
+        ol.addLayout(mon_row)
+
+        # Reset saved position + save monitor button
+        btn_row2 = QHBoxLayout()
+        save_mon_btn = self._action_btn("Apply & Reset Position",
+            "Save monitor choice and clear the overlay's remembered drag position\n"
+            "so it snaps to the new monitor on next detection.")
+        reset_pos_btn = self._action_btn("Reset Position Only",
+            "Clear the overlay's remembered drag position without changing monitor.")
+
+        def _save_monitor():
+            try:
+                cfg_path = WFINFO_DIR / "config.json"
+                cfg = json.loads(cfg_path.read_text()) if cfg_path.exists() else {}
+                cfg["overlay_monitor"] = self._monitor_combo.currentData()
+                cfg_path.write_text(json.dumps(cfg, indent=2))
+                # Clear saved positions for both overlays
+                for pos_file in [
+                    DATA_DIR / "overlay-position.json",
+                    DATA_DIR / "riven-overlay-position.json",
+                ]:
+                    if pos_file.exists():
+                        pos_file.unlink()
+                self.lbl_status.setText("Overlay monitor saved. Restart overlay to apply.")
+            except Exception as e:
+                self.lbl_status.setText(f"Failed to save: {e}")
+
+        def _reset_position():
+            for pos_file in [
+                DATA_DIR / "overlay-position.json",
+                DATA_DIR / "riven-overlay-position.json",
+            ]:
+                if pos_file.exists():
+                    pos_file.unlink()
+            self.lbl_status.setText("Overlay position reset. Next detection will reposition.")
+
+        save_mon_btn.clicked.connect(_save_monitor)
+        reset_pos_btn.clicked.connect(_reset_position)
+        btn_row2.addWidget(save_mon_btn)
+        btn_row2.addWidget(reset_pos_btn)
+        ol.addLayout(btn_row2)
+
+        hint2 = QLabel("Tip: drag the overlay during a detection to reposition it. That position is saved automatically.")
+        hint2.setStyleSheet(f"color: {p['fg_dim']}; font-size: 11px; background: transparent;")
+        hint2.setWordWrap(True)
+        ol.addWidget(hint2)
+        main.addWidget(ov_frame)
+
         # ── Paths card ────────────────────────────────────────────────────
         paths_frame, paths_body = self._card("\u25a1  FILE PATHS", "#4a90d9")
         pl = QVBoxLayout(paths_body)
@@ -476,6 +571,86 @@ class StatusTab(QWidget):
             _update_cb_info(current)
         except Exception:
             pass
+
+        # ── Update checker card ───────────────────────────────────────────
+        import threading, urllib.request
+        upd_frame, upd_body = self._card("⬆  UPDATES", p['green'])
+        ul = QVBoxLayout(upd_body)
+        ul.setContentsMargins(12, 10, 12, 12)
+        ul.setSpacing(8)
+
+        upd_status = QLabel("Click 'Check for Updates' to check.")
+        upd_status.setWordWrap(True)
+        upd_status.setStyleSheet(f"color: {p['fg']}; font-size: 12px; background: transparent;")
+        ul.addWidget(upd_status)
+
+        upd_btn = self._action_btn("Check for Updates",
+            "Checks GitHub for a newer version of Kieda's Orbiter")
+        ul.addWidget(upd_btn)
+
+        def _do_check():
+            upd_btn.setEnabled(False)
+            upd_status.setText("Checking…")
+
+            def _run():
+                results = []
+                # ── App version ──────────────────────────────────────────
+                try:
+                    version_file = WFINFO_DIR.parent / "wfinfo-ng" / "VERSION"
+                    if not version_file.exists():
+                        version_file = Path(__file__).parent / "VERSION"
+                    current = version_file.read_text().strip() if version_file.exists() else "unknown"
+                    req = urllib.request.Request(
+                        "https://api.github.com/repos/GoblinOfChaos/Kieda-s-Orbiter/releases/latest",
+                        headers={"User-Agent": "kiedas-orbiter/1.0", "Accept": "application/vnd.github+json"}
+                    )
+                    with urllib.request.urlopen(req, timeout=8) as r:
+                        data = json.loads(r.read())
+                    latest = data.get("tag_name", "?").lstrip("v")
+                    url = data.get("html_url", "https://github.com/GoblinOfChaos/Kieda-s-Orbiter/releases")
+                    if latest == current:
+                        results.append(f"✓  App:  v{current}  (up to date)")
+                    else:
+                        results.append(f"⬆  App:  v{current}  →  v{latest} available!\n   {url}")
+                except Exception as e:
+                    results.append(f"?  App:  could not check ({e})")
+
+                # ── PySide6 ──────────────────────────────────────────────
+                try:
+                    import PySide6
+                    installed = PySide6.__version__
+                    req2 = urllib.request.Request(
+                        "https://pypi.org/pypi/PySide6/json",
+                        headers={"User-Agent": "kiedas-orbiter/1.0"}
+                    )
+                    with urllib.request.urlopen(req2, timeout=8) as r:
+                        pdata = json.loads(r.read())
+                    pypi_latest = pdata["info"]["version"]
+                    if installed == pypi_latest:
+                        results.append(f"✓  PySide6:  {installed}  (up to date)")
+                    else:
+                        results.append(f"⬆  PySide6:  {installed}  →  {pypi_latest} available\n   Run: .venv/bin/pip install --upgrade PySide6")
+                except Exception as e:
+                    results.append(f"?  PySide6:  could not check ({e})")
+
+                # ── Post back to UI thread ────────────────────────────────
+                from PySide6.QtCore import QMetaObject, Qt as _Qt2, Q_ARG
+                text = "\n".join(results)
+                QMetaObject.invokeMethod(
+                    upd_status, "setText",
+                    _Qt2.ConnectionType.QueuedConnection,
+                    Q_ARG(str, text)
+                )
+                QMetaObject.invokeMethod(
+                    upd_btn, "setEnabled",
+                    _Qt2.ConnectionType.QueuedConnection,
+                    Q_ARG(bool, True)
+                )
+
+            threading.Thread(target=_run, daemon=True).start()
+
+        upd_btn.clicked.connect(_do_check)
+        main.addWidget(upd_frame)
 
         # ── Advanced Settings (collapsible) ───────────────────────────────
         adv_toggle = QPushButton("\u25b6  Advanced Settings (OCR / Detector config)")

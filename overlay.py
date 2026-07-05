@@ -63,6 +63,41 @@ def log(msg):
     print(f"[overlay] {msg}", file=sys.stderr, flush=True)
 
 
+def _target_screen(warframe_geom=None):
+    """Return the QScreen the overlay should default to.
+
+    Priority:
+      1. config.json overlay_monitor = <index>  → that screen
+      2. config.json overlay_monitor = "auto"   → screen containing Warframe window
+      3. fallback                               → primary screen
+    """
+    from PySide6.QtWidgets import QApplication
+    screens = QApplication.screens()
+    if not screens:
+        return None
+
+    cfg = _load_config()
+    monitor = cfg.get("overlay_monitor", "auto")
+
+    if monitor != "auto":
+        try:
+            idx = int(monitor)
+            if 0 <= idx < len(screens):
+                return screens[idx]
+        except (TypeError, ValueError):
+            pass
+
+    # Auto: find the screen that contains the Warframe window
+    if warframe_geom:
+        wx = warframe_geom.get("x", 0) + warframe_geom.get("width", 0) // 2
+        wy = warframe_geom.get("y", 0) + warframe_geom.get("height", 0) // 2
+        for s in screens:
+            if s.geometry().contains(wx, wy):
+                return s
+
+    return QApplication.primaryScreen()
+
+
 class _DraggableOverlay(QWidget):
     """Frameless, always-on-top, click-and-drag window whose position is
     remembered in `position_file` across drags and app restarts."""
@@ -223,16 +258,12 @@ class Overlay(_DraggableOverlay):
             x, y = saved["x"], saved["y"]
             self.move(x, y)
         else:
-            wf = self._last_warframe_geom
-            if wf:
-                wx, wy = wf.get("x", 0), wf.get("y", 0)
-                ww, wh = wf.get("width", 1920), wf.get("height", 1080)
-            else:
-                screen = QApplication.primaryScreen().geometry()
-                wx, wy = screen.x(), screen.y()
-                ww, wh = screen.width(), screen.height()
-            x = wx + (ww - self.width()) // 2
-            y = wy + wh - self.height() - 80
+            screen = _target_screen(self._last_warframe_geom)
+            if screen is None:
+                screen = QApplication.primaryScreen()
+            g = screen.geometry()
+            x = g.x() + (g.width() - self.width()) // 2
+            y = g.y() + g.height() - self.height() - 80
             self.move(x, y)
         self.show()
         self.raise_()
