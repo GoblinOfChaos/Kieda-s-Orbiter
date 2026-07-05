@@ -41,26 +41,49 @@ Built on top of [wfinfo-ng](https://github.com/knoellle/wfinfo-ng) by knoellle, 
 ## Installation
 
 ```bash
-# 1. Clone the repo
 git clone https://github.com/GoblinOfChaos/Kieda-s-Orbiter.git
 cd Kieda-s-Orbiter
+./install.sh
+```
 
-# 2. Create a Python virtual environment and install dependencies
+That's it. The installer will:
+1. Check for Python 3.11+ and Tesseract OCR
+2. Create a Python virtual environment and install dependencies
+3. Build the relic reward OCR binary (if Rust is installed)
+4. Download the latest Warframe item and price data
+5. Install the app icon and **add it to your start menu**
+
+After installing, search for **"Kieda's Orbiter"** in your start menu (or application launcher) to launch it.
+
+On first launch, go to **Status & Tools → File Paths** to verify your EE.log was auto-detected correctly.
+
+### Manual steps (if you prefer)
+
+<details>
+<summary>Expand for manual installation steps</summary>
+
+```bash
+# Create virtual environment
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 
-# 3. (Optional) Build the relic reward OCR detector
+# (Optional) Build the relic reward OCR detector — requires Rust
 cargo build --release --bin orbiter
 
-# 4. Download the latest Warframe item/price data
+# Download Warframe data
 ./update.sh
 
-# 5. Launch
+# Install icon + start menu entry
+mkdir -p ~/.local/share/icons/hicolor/scalable/apps
+cp orbiter.svg ~/.local/share/icons/hicolor/scalable/apps/
+cp kiedas-orbiter.desktop ~/.local/share/applications/
+update-desktop-database ~/.local/share/applications/
+
+# Launch
 ./control-panel.sh
 ```
 
-The app will auto-detect your EE.log and inventory paths on first launch.
-If auto-detection fails, set them manually in **Status & Tools → File Paths**.
+</details>
 
 ---
 

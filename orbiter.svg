@@ -1,0 +1,85 @@
+<svg viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="128" cy="128" r="124" fill="#08061a"/>
+  <ellipse cx="128" cy="128" rx="118" ry="118" fill="#181038" opacity="0.45"/>
+  <ellipse cx="128" cy="128" rx="90" ry="90" fill="#22134c" opacity="0.5"/>
+  <ellipse cx="128" cy="128" rx="60" ry="60" fill="#2a1860" opacity="0.55"/>
+  <path d="M 200,128 C 200,80 170,38 128,38 C 80,38 56,80 56,128" stroke="#7a5dd8" stroke-width="22" fill="none" stroke-linecap="round" opacity="0.4"/>
+  <path d="M 56,128 C 56,176 86,218 128,218 C 176,218 200,176 200,128" stroke="#7a5dd8" stroke-width="22" fill="none" stroke-linecap="round" opacity="0.4"/>
+  <path d="M 185,128 C 185,90 160,55 128,55" stroke="#a895f0" stroke-width="5" fill="none" stroke-linecap="round" opacity="0.75"/>
+  <path d="M 71,128 C 71,166 96,201 128,201" stroke="#a895f0" stroke-width="5" fill="none" stroke-linecap="round" opacity="0.75"/>
+  <g fill="#ffffff" opacity="0.7">
+    <circle cx="32" cy="70" r="0.7"/><circle cx="50" cy="55" r="0.8"/><circle cx="78" cy="42" r="0.9"/>
+    <circle cx="100" cy="55" r="0.6"/><circle cx="120" cy="42" r="0.7"/><circle cx="148" cy="55" r="0.6"/>
+    <circle cx="172" cy="40" r="0.8"/><circle cx="195" cy="50" r="0.7"/><circle cx="218" cy="75" r="0.9"/>
+    <circle cx="230" cy="100" r="0.6"/><circle cx="232" cy="135" r="0.8"/><circle cx="225" cy="160" r="0.7"/>
+    <circle cx="210" cy="190" r="0.8"/><circle cx="188" cy="208" r="0.9"/><circle cx="162" cy="220" r="0.7"/>
+    <circle cx="138" cy="228" r="0.6"/><circle cx="112" cy="228" r="0.7"/><circle cx="85" cy="218" r="0.8"/>
+    <circle cx="58" cy="205" r="0.7"/><circle cx="35" cy="188" r="0.8"/><circle cx="24" cy="158" r="0.9"/>
+    <circle cx="22" cy="125" r="0.7"/><circle cx="26" cy="95" r="0.8"/><circle cx="42" cy="115" r="0.5"/>
+    <circle cx="75" cy="85" r="0.6"/><circle cx="98" cy="108" r="0.5"/><circle cx="162" cy="115" r="0.5"/>
+    <circle cx="188" cy="92" r="0.6"/><circle cx="85" cy="142" r="0.5"/><circle cx="158" cy="162" r="0.5"/>
+    <circle cx="172" cy="182" r="0.5"/><circle cx="95" cy="188" r="0.5"/><circle cx="115" cy="68" r="0.6"/>
+    <circle cx="68" cy="195" r="0.7"/><circle cx="195" cy="155" r="0.6"/>
+  </g>
+  <g>
+    <circle cx="44" cy="85" r="1.4" fill="#d8284c"/><circle cx="178" cy="48" r="1.2" fill="#c83448"/>
+    <circle cx="200" cy="195" r="1.4" fill="#b82838"/><circle cx="72" cy="50" r="1.3" fill="#20b070"/>
+    <circle cx="218" cy="118" r="1.5" fill="#18a060"/><circle cx="48" cy="195" r="1.4" fill="#28b878"/>
+    <circle cx="38" cy="135" r="1.5" fill="#9854d8"/><circle cx="105" cy="42" r="1.2" fill="#a868e0"/>
+    <circle cx="215" cy="148" r="1.3" fill="#8848c8"/><circle cx="92" cy="212" r="1.5" fill="#f4c020"/>
+    <circle cx="195" cy="80" r="1.3" fill="#e8b830"/><circle cx="140" cy="215" r="1.4" fill="#f060a8"/>
+    <circle cx="62" cy="172" r="1.2" fill="#e858a0"/><circle cx="160" cy="222" r="1.3" fill="#a8c828"/>
+    <circle cx="205" cy="170" r="1.3" fill="#e88830"/><circle cx="125" cy="35" r="1.2" fill="#f49830"/>
+    <circle cx="58" cy="118" r="1.2" fill="#a02038"/><circle cx="180" cy="212" r="1.3" fill="#902030"/>
+    <circle cx="150" cy="205" r="1.4" fill="#ffffff"/><circle cx="80" cy="58" r="1.2" fill="#ffffff"/>
+  </g>
+  <g>
+    <circle cx="42" cy="105" r="2.8" fill="#d8284c"/><circle cx="41" cy="103.5" r="1" fill="#ff6080" opacity="0.9"/>
+    <circle cx="212" cy="98" r="2.5" fill="#18a060"/><circle cx="211" cy="96.8" r="0.9" fill="#50e090" opacity="0.9"/>
+    <circle cx="62" cy="40" r="2.6" fill="#9854d8"/><circle cx="61" cy="39" r="0.9" fill="#d090ff" opacity="0.9"/>
+    <circle cx="210" cy="62" r="2.4" fill="#f4c020"/><circle cx="209" cy="61" r="0.9" fill="#fff080" opacity="0.95"/>
+    <circle cx="52" cy="208" r="2.6" fill="#f060a8"/><circle cx="51" cy="206.8" r="0.9" fill="#ffa0d0" opacity="0.9"/>
+    <circle cx="170" cy="30" r="2.4" fill="#a8c828"/><circle cx="169" cy="29" r="0.9" fill="#d8f060" opacity="0.95"/>
+    <circle cx="200" cy="208" r="2.5" fill="#e88830"/><circle cx="199" cy="207" r="0.9" fill="#ffb868" opacity="0.9"/>
+    <circle cx="100" cy="195" r="2.4" fill="#a02038"/><circle cx="99" cy="194" r="0.8" fill="#d04860" opacity="0.85"/>
+    <circle cx="185" cy="192" r="2.4" fill="#ffffff"/>
+  </g>
+  <circle cx="128" cy="128" r="55" fill="#3858ff" opacity="0.18"/>
+  <circle cx="128" cy="128" r="40" fill="#4868ff" opacity="0.25"/>
+  <circle cx="128" cy="128" r="28" fill="#5878ff" opacity="0.3"/>
+  <polygon points="128,82 174,128 128,172 82,128" fill="#1a2884" stroke="#5468e0" stroke-width="1.5"/>
+  <polygon points="128,82 151,105 128,100" fill="#4870d8"/>
+  <polygon points="151,105 146,122 128,100" fill="#1e2884"/>
+  <polygon points="151,105 174,128 146,122" fill="#3050b8"/>
+  <polygon points="174,128 151,151 146,122" fill="#14206c"/>
+  <polygon points="151,151 128,144 146,122" fill="#283cb0"/>
+  <polygon points="151,151 128,172 128,144" fill="#08103c"/>
+  <polygon points="128,172 105,151 128,144" fill="#1a2884"/>
+  <polygon points="105,151 110,122 128,144" fill="#3a4ec8"/>
+  <polygon points="105,151 82,128 110,122" fill="#14206c"/>
+  <polygon points="82,128 105,105 110,122" fill="#4262d0"/>
+  <polygon points="105,105 128,100 110,122" fill="#6a8aff"/>
+  <polygon points="105,105 128,82 128,100" fill="#283cb0"/>
+  <polygon points="128,100 146,122 128,128" fill="#1a2884"/>
+  <polygon points="146,122 128,144 128,128" fill="#283cb0"/>
+  <polygon points="128,144 110,122 128,128" fill="#0a1248"/>
+  <polygon points="110,122 128,100 128,128" fill="#3a4ec8"/>
+  <line x1="128" y1="82" x2="105" y2="105" stroke="#9ab0ff" stroke-width="1" opacity="0.65"/>
+  <line x1="105" y1="105" x2="82" y2="128" stroke="#7a8fe8" stroke-width="0.7" opacity="0.45"/>
+  <line x1="128" y1="82" x2="151" y2="105" stroke="#6a7fd8" stroke-width="0.6" opacity="0.4"/>
+  <line x1="128" y1="100" x2="110" y2="122" stroke="#aac0ff" stroke-width="0.6" opacity="0.55"/>
+  <line x1="105" y1="105" x2="128" y2="100" stroke="#bfd0ff" stroke-width="0.6" opacity="0.6"/>
+  <polygon points="115,108 124,114 118,121 109,116" fill="#b8ccff" opacity="0.7"/>
+  <polygon points="117,110 122,114 118,118" fill="#e8efff" opacity="0.85"/>
+  <circle cx="128" cy="128" r="1.1" fill="#ffffff" opacity="0.65"/>
+  <g stroke="#ffffff" stroke-width="0.7" stroke-linecap="round" opacity="0.8">
+    <line x1="114" y1="114" x2="122" y2="114"/>
+    <line x1="118" y1="110" x2="118" y2="118"/>
+  </g>
+  <g opacity="0.55" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round">
+    <line x1="128" y1="66" x2="128" y2="80"/>
+    <line x1="128" y1="176" x2="128" y2="190"/>
+    <line x1="66" y1="128" x2="80" y2="128"/>
+    <line x1="176" y1="128" x2="190" y2="128"/>
+  </g>
+</svg>
