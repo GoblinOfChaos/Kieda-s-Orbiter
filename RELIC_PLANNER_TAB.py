@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
     QTableWidget, QTableWidgetItem, QHeaderView, QListWidget, QSplitter,
 )
 from column_persistence import apply_saved_widths, remember_widths
+from paths import DATA_DIR
 
 BASE = Path(__file__).parent
 ERAS = ["Lith", "Meso", "Neo", "Axi", "Vanguard"]
@@ -20,6 +21,7 @@ class RelicPlannerTab(QWidget):
         self._relics = {}
         self._need = []
         self._owned = {}
+        self._crafted = set()  # parts ever built/mastered
         self._setup_ui()
         self._load()
 
@@ -55,9 +57,20 @@ class RelicPlannerTab(QWidget):
         btn_row.addWidget(self._clear_btn)
         mid_layout.addLayout(btn_row)
         self._add_all_missing_btn = QPushButton("Add All Missing Parts")
-        self._add_all_missing_btn.setToolTip("Adds every prime part you own zero of to the need list")
+        self._add_all_missing_btn.setToolTip(
+            "Adds every prime part you currently own zero of.\n"
+            "Includes parts you've crafted before and used up."
+        )
         self._add_all_missing_btn.clicked.connect(self._add_all_missing)
         mid_layout.addWidget(self._add_all_missing_btn)
+
+        self._add_unacquired_btn = QPushButton("Add Never Obtained")
+        self._add_unacquired_btn.setToolTip(
+            "Adds only parts you have never owned or crafted at all —\n"
+            "excludes parts you built/mastered before and used up."
+        )
+        self._add_unacquired_btn.clicked.connect(self._add_unacquired)
+        mid_layout.addWidget(self._add_unacquired_btn)
         splitter.addWidget(mid)
 
         # Right panel — relic matches
@@ -100,6 +113,10 @@ class RelicPlannerTab(QWidget):
             self._owned = json.loads((BASE / "owned_items.json").read_text())
         except Exception:
             self._owned = {}
+        try:
+            self._crafted = set(json.loads((DATA_DIR / "crafted_parts.json").read_text()))
+        except Exception:
+            self._crafted = set()
 
     def _filter_parts(self, text):
         q = text.strip().lower()
@@ -128,6 +145,7 @@ class RelicPlannerTab(QWidget):
         self._compute()
 
     def _add_all_missing(self):
+        """Add every part currently at zero count (includes previously crafted)."""
         added = 0
         for part in self._all_parts:
             if self._owned.get(part, 0) == 0 and part not in self._need:
@@ -137,6 +155,23 @@ class RelicPlannerTab(QWidget):
         if added:
             self._compute()
         self._status.setText(f"Added {added} missing part(s) to the need list.")
+
+    def _add_unacquired(self):
+        """Add only parts never obtained at all — not in inventory AND never crafted."""
+        added = 0
+        for part in self._all_parts:
+            never_owned   = self._owned.get(part, 0) == 0
+            never_crafted = part not in self._crafted
+            if never_owned and never_crafted and part not in self._need:
+                self._need.append(part)
+                self._need_list.addItem(part)
+                added += 1
+        if added:
+            self._compute()
+        self._status.setText(
+            f"Added {added} never-obtained part(s) "
+            f"(excludes {len(self._crafted)} previously crafted parts)."
+        )
 
     def _compute(self):
         if not self._need:
