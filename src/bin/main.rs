@@ -152,7 +152,7 @@ fn log_watcher(path: PathBuf, event_sender: mpsc::Sender<()>) {
 
                     let mut reward_screen_detected = false;
 
-                    let reader = BufReader::new(f.by_ref());
+                    let reader = BufReader::new(std::io::Read::by_ref(&mut f));
                     for line in reader.lines() {
                         let line = match line {
                             Ok(line) => line,
