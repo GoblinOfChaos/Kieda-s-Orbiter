@@ -18,16 +18,16 @@ impl Ownership {
     pub fn label(&self) -> String {
         match self {
             Ownership::Owned(n) => format!("OWNED x{}", n),
-            Ownership::Need     => "NEED".to_string(),
-            Ownership::Unknown  => "UNKNOWN".to_string(),
+            Ownership::Need => "NEED".to_string(),
+            Ownership::Unknown => "UNKNOWN".to_string(),
         }
     }
 
     pub fn colored(&self) -> String {
         match self {
             Ownership::Owned(n) => format!("\x1b[2mOWNED x{}\x1b[0m", n),
-            Ownership::Need     => "\x1b[1;32mNEED\x1b[0m".to_string(),
-            Ownership::Unknown  => "\x1b[33mUNKNOWN\x1b[0m".to_string(),
+            Ownership::Need => "\x1b[1;32mNEED\x1b[0m".to_string(),
+            Ownership::Unknown => "\x1b[33mUNKNOWN\x1b[0m".to_string(),
         }
     }
 }
@@ -43,7 +43,11 @@ impl OwnedDb {
         let text = read_to_string(path)?;
         let items: HashMap<String, u32> = serde_json::from_str(&text)
             .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
-        info!("Loaded ownership: {} entries from {}", items.len(), path.display());
+        info!(
+            "Loaded ownership: {} entries from {}",
+            items.len(),
+            path.display()
+        );
         Ok(OwnedDb { items })
     }
 
@@ -63,9 +67,9 @@ impl OwnedDb {
 
     pub fn lookup(&self, drop_name: &str) -> Ownership {
         match self.items.get(drop_name) {
-            None         => Ownership::Unknown,
-            Some(0)      => Ownership::Need,
-            Some(&n)     => Ownership::Owned(n),
+            None => Ownership::Unknown,
+            Some(0) => Ownership::Need,
+            Some(&n) => Ownership::Owned(n),
         }
     }
 }
@@ -76,11 +80,13 @@ pub fn notify(title: &str, body: &str, urgency: &str) {
     let _ = Command::new("notify-send")
         .args([
             "--app-name=wfinfo",
-            "--urgency", urgency,
+            "--urgency",
+            urgency,
             "--expire-time=4500",
             "--transient",
             "--hint=int:transient:1",
-            title, body,
+            title,
+            body,
         ])
         .spawn();
 }

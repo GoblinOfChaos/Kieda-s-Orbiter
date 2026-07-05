@@ -16,12 +16,12 @@ use log::{debug, error, info, warn};
 use notify::{watcher, RecursiveMode, Watcher};
 use xcap::Window;
 
+use wfinfo::ownership::{notify, OwnedDb, Ownership};
 use wfinfo::{
     database::Database,
     ocr::{normalize_string, reward_image_to_reward_names, OCR},
     utils::fetch_prices_and_items,
 };
-use wfinfo::ownership::{notify, OwnedDb, Ownership};
 
 fn run_detection(capturer: &Window, db: &Database, owned: &OwnedDb) {
     let frame = match capturer.capture_image() {
@@ -58,14 +58,16 @@ fn run_detection(capturer: &Window, db: &Database, owned: &OwnedDb) {
 
     // Desktop notification — skipped if show_notifications=0 in config.json
     let notifications_enabled = std::fs::read_to_string(
-        std::env::current_exe().ok()
+        std::env::current_exe()
+            .ok()
             .and_then(|p| p.parent().map(|d| d.join("../../config.json")))
-            .unwrap_or_else(|| PathBuf::from("config.json"))
+            .unwrap_or_else(|| PathBuf::from("config.json")),
     )
     .ok()
     .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
     .and_then(|v| v.get("show_notifications").and_then(|n| n.as_i64()))
-    .unwrap_or(1) != 0;
+    .unwrap_or(1)
+        != 0;
 
     if notifications_enabled {
         let any_need = resolved.iter().any(|(_, o)| matches!(o, Ownership::Need));
@@ -86,8 +88,8 @@ fn run_detection(capturer: &Window, db: &Database, owned: &OwnedDb) {
         .map(|(name, own)| {
             let (status, count) = match own {
                 Ownership::Owned(n) => ("OWNED", *n),
-                Ownership::Need     => ("NEED", 0),
-                Ownership::Unknown  => ("UNKNOWN", 0),
+                Ownership::Need => ("NEED", 0),
+                Ownership::Unknown => ("UNKNOWN", 0),
             };
             format!(
                 r#"{{"name":{},"status":"{}","count":{}}}"#,
@@ -104,11 +106,11 @@ fn run_detection(capturer: &Window, db: &Database, owned: &OwnedDb) {
         .as_secs();
     let state_json = format!(
         r#"{{"timestamp":{ts},"warframe":{{"x":{x},"y":{y},"width":{w},"height":{h}}},"rewards":[{rewards}]}}"#,
-        ts      = ts,
-        x       = capturer.x(),
-        y       = capturer.y(),
-        w       = capturer.width(),
-        h       = capturer.height(),
+        ts = ts,
+        x = capturer.x(),
+        y = capturer.y(),
+        w = capturer.width(),
+        h = capturer.height(),
         rewards = rewards_json.join(","),
     );
 
@@ -121,9 +123,10 @@ fn run_detection(capturer: &Window, db: &Database, owned: &OwnedDb) {
     let _ = std::fs::create_dir_all(&data_dir);
     let state_path = data_dir.join("latest-detection.json");
     match File::create(&state_path).and_then(|mut f| f.write_all(state_json.as_bytes())) {
-        Ok(_)  => info!("Wrote state file: {}", state_path.display()),
+        Ok(_) => info!("Wrote state file: {}", state_path.display()),
         Err(e) => warn!("Failed to write state file: {}", e),
-    }}
+    }
+}
 
 fn log_watcher(path: PathBuf, event_sender: mpsc::Sender<()>) {
     debug!("Path: {}", path.display());

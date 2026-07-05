@@ -16,10 +16,8 @@ struct Args {
 }
 
 fn main() {
-    env_logger::Builder::from_env(
-        env_logger::Env::default().filter_or("WFINFO_LOG", "info"),
-    )
-    .init();
+    env_logger::Builder::from_env(env_logger::Env::default().filter_or("WFINFO_LOG", "info"))
+        .init();
 
     let args = Args::parse();
     let image = Reader::open(&args.screenshot)
@@ -48,7 +46,11 @@ fn main() {
                 println!("  {:<40}  {}", item.drop_name, own.colored());
             }
             None => {
-                println!("  {:<40}  {}", format!("? {}", n), Ownership::Unknown.colored());
+                println!(
+                    "  {:<40}  {}",
+                    format!("? {}", n),
+                    Ownership::Unknown.colored()
+                );
             }
         }
     }
