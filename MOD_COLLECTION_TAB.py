@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Missing Mods tracker: shows mods from ExportUpgrades and ExportModSet with owned counts."""
+"""Mod Collection tab: shows all mods from ExportUpgrades and ExportModSet with owned counts. Filter to show only missing ones."""
 import json
 import re
 from pathlib import Path
@@ -24,7 +24,7 @@ POLARITY_NAMES = {
 }
 
 
-class MissingModsTab(QWidget):
+class ModCollectionTab(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._owned = {}
@@ -53,8 +53,8 @@ class MissingModsTab(QWidget):
         ])
         for col in range(7):
             self._table.horizontalHeader().setSectionResizeMode(col, QHeaderView.Interactive)
-        apply_saved_widths(self._table, "missing_mods_table", [180, 110, 70, 80, 140, 320, 60])
-        remember_widths(self._table, "missing_mods_table")
+        apply_saved_widths(self._table, "mod_collection_table", [180, 110, 70, 80, 140, 320, 60])
+        remember_widths(self._table, "mod_collection_table")
         self._table.setSortingEnabled(True)
         self._table.verticalHeader().setVisible(False)
         self._table.sortByColumn(0, Qt.AscendingOrder)

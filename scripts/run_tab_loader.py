@@ -21,14 +21,14 @@ def main():
         rg = RivenGraderTab()
         print('RivenGrader rows:', rg._table.rowCount())
 
-        mm_path = base / 'MISSING_MODS_TAB.py'
+        mm_path = base / 'MOD_COLLECTION_TAB.py'
         if mm_path.exists():
-            mm_mod = _load_module_from_path(mm_path, 'MISSING_MODS_TAB')
-            MissingModsTab = getattr(mm_mod, 'MissingModsTab')
-            mm = MissingModsTab()
-            print('MissingMods rows:', mm._table.rowCount())
+            mm_mod = _load_module_from_path(mm_path, 'MOD_COLLECTION_TAB')
+            ModCollectionTab = getattr(mm_mod, 'ModCollectionTab')
+            mm = ModCollectionTab()
+            print('ModCollection rows:', mm._table.rowCount())
         else:
-            print('MissingMods tab not present; skipped')
+            print('Mod Collection tab not present; skipped')
     finally:
         app.quit()
 

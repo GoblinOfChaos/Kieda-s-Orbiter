@@ -16,14 +16,14 @@ def test_import_tabs():
     import FOUNDRY_TAB as ft
     import RELIC_PLANNER_TAB as rpt
     import MARKET_TAB as mt
-    import MISSING_MODS_TAB as mmt
+    import MOD_COLLECTION_TAB as mmt
     import SETTINGS_TAB as st
 
     tab2 = invt.InventoryTab()
     tab3 = ft.FoundryTab()
     tab4 = rpt.RelicPlannerTab()
     tab5 = mt.MarketTab()
-    tab6 = mmt.MissingModsTab()
+    tab6 = mmt.ModCollectionTab()
     tab7 = st.SettingsTab()
 
     assert tab2._table.rowCount() == len(tab2._owned)

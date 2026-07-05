@@ -13,7 +13,7 @@ Built on top of [wfinfo-ng](https://github.com/knoellle/wfinfo-ng) by knoellle, 
 - **Missing Parts** — What prime parts you still need, and which relics drop them
 - **Set Progress** — Track completion % of every prime set
 - **Foundry** — Items in progress or ready to claim
-- **Missing Mods** — Mods you haven't acquired yet
+- **Mod Collection** — All mods with owned counts; filter to show only missing ones
 - **Mastery Helper** — Items to level for free MR XP, sourced from your own relics
 - **Relic Planner** — Plan which relics to run for your most-needed drops
 - **Best Relics** — Which relics give the most value right now
