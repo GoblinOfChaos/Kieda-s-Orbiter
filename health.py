@@ -11,12 +11,13 @@ from pathlib import Path
 from PySide6.QtCore import QTimer, Qt
 from PySide6.QtWidgets import QGroupBox, QGridLayout, QLabel, QPushButton, QHBoxLayout
 
+from paths import DATA_DIR
 WFINFO_DIR = Path.home() / "wfinfo-ng"
-LOG_DIR    = Path.home() / ".local/share/kiedas-orbiter"
+LOG_DIR    = DATA_DIR
 INVENTORY  = WFINFO_DIR / "inventory.json"
 WFINFO_BIN = WFINFO_DIR / "target/release/orbiter"
 WFINFO_SRC = WFINFO_DIR / "src/bin/main.rs"
-STATE_FILE = LOG_DIR / "latest-detection.json"
+STATE_FILE = DATA_DIR / "latest-detection.json"
 def _get_ee_log():
     try:
         from paths import get_ee_log_path

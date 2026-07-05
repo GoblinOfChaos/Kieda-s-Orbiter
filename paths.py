@@ -28,16 +28,33 @@ IS_MAC     = sys.platform == "darwin"
 IS_LINUX   = sys.platform.startswith("linux")
 
 # ── OS-appropriate data & cache directories ───────────────────────────────
+_SANDBOX_INDICATORS = (
+    "com.visualstudio.code",
+    "com.vscodium",
+    "flatpak/exports",
+    "io.github.vscodium",
+)
+
+def _is_sandbox_path(p: str) -> bool:
+    return any(ind in p for ind in _SANDBOX_INDICATORS)
+
+
 def _get_data_dir() -> Path:
     if IS_WINDOWS:
         base = Path(os.environ.get("APPDATA", Path.home() / "AppData/Roaming"))
     elif IS_MAC:
         base = Path.home() / "Library" / "Application Support"
     else:
-        base = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share"))
+        # Ignore XDG_DATA_HOME if it points to a sandbox environment (VS Code Flatpak etc.)
+        xdg = os.environ.get("XDG_DATA_HOME", "")
+        if xdg and not _is_sandbox_path(xdg):
+            base = Path(xdg)
+        else:
+            base = Path.home() / ".local/share"
     d = base / "kiedas-orbiter"
     d.mkdir(parents=True, exist_ok=True)
     return d
+
 
 def _get_cache_dir() -> Path:
     if IS_WINDOWS:
@@ -45,7 +62,11 @@ def _get_cache_dir() -> Path:
     elif IS_MAC:
         base = Path.home() / "Library" / "Caches"
     else:
-        base = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
+        xdg = os.environ.get("XDG_CACHE_HOME", "")
+        if xdg and not _is_sandbox_path(xdg):
+            base = Path(xdg)
+        else:
+            base = Path.home() / ".cache"
     d = base / "kiedas-orbiter"
     d.mkdir(parents=True, exist_ok=True)
     return d

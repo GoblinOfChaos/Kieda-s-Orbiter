@@ -16,4 +16,6 @@ fi
 exec env \
     LD_LIBRARY_PATH="${QT_LIB_DIR}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" \
     QT_QPA_PLATFORM="$QT_PLATFORM" \
+    XDG_DATA_HOME="$HOME/.local/share" \
+    XDG_CACHE_HOME="$HOME/.cache" \
     "$WFINFO_DIR/.venv/bin/python" "$WFINFO_DIR/missing-parts.py"
