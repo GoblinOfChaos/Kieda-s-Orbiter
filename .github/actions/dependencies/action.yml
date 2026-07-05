@@ -2,5 +2,10 @@ name: "Install dependencies"
 runs:
   using: "composite"
   steps:
-    - run: sudo apt install libtesseract-dev xorg-dev
+    - run: |
+        sudo apt-get update -q
+        sudo apt-get install -y \
+          libtesseract-dev libleptonica-dev \
+          xorg-dev libxcb-composite0-dev libxcb-cursor-dev \
+          libdbus-1-dev pkg-config
       shell: bash

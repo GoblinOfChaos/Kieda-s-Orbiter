@@ -1,45 +1,100 @@
-name: Rust
+name: CI
 on:
   push:
   pull_request:
 env:
   CARGO_TERM_COLOR: always
+
 jobs:
-  check:
-    name: Clippy
+  # ── Python: verify all tabs import cleanly ──────────────────────────────
+  python:
+    name: Python imports
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          lfs: true
-      - uses: ./.github/actions/dependencies
-      - uses: Swatinem/rust-cache@v2.7.3
-      - name: Check
+          python-version: "3.11"
+      - name: Install Python deps
+        run: pip install PySide6
+      - name: Check imports
         run: |
-          cargo clippy --workspace --all-features
+          python - << 'EOF'
+          import sys, importlib.util, os
+          os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
+          from PySide6.QtWidgets import QApplication
+          app = QApplication([])
+          fails = []
+          for name, path in [
+              ('paths','paths.py'), ('theme','theme.py'),
+              ('DASHBOARD_TAB','DASHBOARD_TAB.py'), ('STATUS_TAB','STATUS_TAB.py'),
+              ('INVENTORY_TAB','INVENTORY_TAB.py'), ('MARKET_TAB','MARKET_TAB.py'),
+              ('RELIC_PLANNER_TAB','RELIC_PLANNER_TAB.py'),
+              ('RIVEN_GRADER_TAB','RIVEN_GRADER_TAB.py'),
+              ('MASTERY_HELPER_TAB','MASTERY_HELPER_TAB.py'),
+              ('MOD_COLLECTION_TAB','MOD_COLLECTION_TAB.py'),
+              ('STATS_HISTORY_TAB','STATS_HISTORY_TAB.py'),
+              ('CREDITS_TAB','CREDITS_TAB.py'),
+              ('disclaimer','disclaimer.py'), ('health','health.py'),
+              ('overlay','overlay.py'),
+          ]:
+              try:
+                  spec = importlib.util.spec_from_file_location(name, path)
+                  m = importlib.util.module_from_spec(spec)
+                  spec.loader.exec_module(m)
+                  print(f'  OK  {path}')
+              except Exception as e:
+                  print(f'  FAIL {path}: {e}')
+                  fails.append(path)
+          sys.exit(1 if fails else 0)
+          EOF
 
-  format:
-    name: Format
+  # ── Rust: format check only (fast, no system deps needed) ───────────────
+  rust-format:
+    name: Rust format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           lfs: true
-      - uses: ./.github/actions/dependencies
-      - uses: Swatinem/rust-cache@v2.7.3
-      - name: Check
-        run: |
-          cargo fmt --check
+      - uses: Swatinem/rust-cache@v2
+      - name: Check formatting
+        run: cargo fmt --check
 
-  build:
-    name: Build
+  # ── Rust: full build (needs system libs) ────────────────────────────────
+  rust-build:
+    name: Rust build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           lfs: true
-      - uses: ./.github/actions/dependencies
-      - uses: Swatinem/rust-cache@v2.7.3
-      - name: Check
+      - name: Install system dependencies
         run: |
-          cargo build --release
+          sudo apt-get update -q
+          sudo apt-get install -y \
+            libtesseract-dev libleptonica-dev \
+            xorg-dev libxcb-composite0-dev libxcb-cursor-dev \
+            libdbus-1-dev pkg-config
+      - uses: Swatinem/rust-cache@v2
+      - name: Build
+        run: cargo build --release
+
+  # ── Rust: clippy (same deps as build) ───────────────────────────────────
+  rust-clippy:
+    name: Rust clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y \
+            libtesseract-dev libleptonica-dev \
+            xorg-dev libxcb-composite0-dev libxcb-cursor-dev \
+            libdbus-1-dev pkg-config
+      - uses: Swatinem/rust-cache@v2
+      - name: Clippy
+        run: cargo clippy --workspace --all-features
