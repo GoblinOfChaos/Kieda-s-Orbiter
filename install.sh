@@ -188,6 +188,24 @@ AUTOSTART
 
 success "Autostart entries installed (overlay will start on login)"
 
+# ── Compatibility symlink: old wfinfo path → kiedas-orbiter ──────────────
+# The detector binary may write to ~/.local/share/wfinfo/ (old name).
+# Symlink it so the overlay always finds detections regardless.
+OLD_WFINFO_DIR="$HOME/.local/share/wfinfo"
+NEW_DATA_DIR="$HOME/.local/share/kiedas-orbiter"
+mkdir -p "$OLD_WFINFO_DIR" "$NEW_DATA_DIR"
+OLD_STATE="$OLD_WFINFO_DIR/latest-detection.json"
+NEW_STATE="$NEW_DATA_DIR/latest-detection.json"
+if [[ -f "$OLD_STATE" && ! -L "$OLD_STATE" ]]; then
+    # Copy real file content to new location then replace with symlink
+    cp "$OLD_STATE" "$NEW_STATE" 2>/dev/null || true
+    rm "$OLD_STATE"
+fi
+if [[ ! -e "$OLD_STATE" ]]; then
+    ln -s "$NEW_STATE" "$OLD_STATE"
+    success "Created compatibility symlink: wfinfo/ → kiedas-orbiter/"
+fi
+
 # ── 9. Make scripts executable ────────────────────────────────────────────
 chmod +x "$REPO_DIR/control-panel.sh" \
          "$REPO_DIR/launch-orbiter.sh" \
