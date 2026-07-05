@@ -869,10 +869,11 @@ class StatusTab(QWidget):
         for b in self._all_buttons():
             b.setEnabled(enabled)
 
-    def _run_command(self, cmd, cwd, description):
+    def _run_command(self, cmd, cwd, description, reload_tabs=False):
         if self.process and self.process.state() != QProcess.NotRunning:
             QMessageBox.warning(self, "Busy", "Another command is already running.")
             return
+        self._pending_reload_tabs = reload_tabs
         self._set_buttons_enabled(False)
         self.lbl_status.setText(f"Running: {description}")
         self.cmd_text.clear()
@@ -899,6 +900,39 @@ class StatusTab(QWidget):
         self._set_buttons_enabled(True)
         self.process = None
         self._update_status()
+        if getattr(self, '_pending_reload_tabs', False) and code == 0:
+            self._reload_all_tabs()
+            self._pending_reload_tabs = False
+
+    def _reload_all_tabs(self):
+        """Walk the QStackedWidget and call _load_data() or _load() on every
+        already-built tab so inventory changes appear without restarting."""
+        reloaded = []
+        try:
+            stack = self.parent()
+            while stack and not hasattr(stack, 'count'):
+                stack = stack.parent()
+            if not stack:
+                return
+            for i in range(stack.count()):
+                w = stack.widget(i)
+                # Skip placeholders (lazy-unbuilt pages have _factory attr)
+                if hasattr(w, '_factory'):
+                    continue
+                for method in ('_load_data', '_load', 'reload'):
+                    if hasattr(w, method) and callable(getattr(w, method)):
+                        try:
+                            getattr(w, method)()
+                            reloaded.append(type(w).__name__)
+                        except Exception:
+                            pass
+                        break
+        except Exception:
+            pass
+        if reloaded:
+            self.cmd_text.append(
+                f"\n✓ Reloaded tabs: {', '.join(reloaded)}"
+            )
 
     # ── Button handlers ───────────────────────────────────────────────────
 
@@ -942,8 +976,9 @@ class StatusTab(QWidget):
             "python3 populate_owned.py inventory.json owned_items.json && "
             "python3 populate_crafted.py && python3 populate_relics.py && "
             "python3 populate_equipment.py && python3 record_stats_snapshot.py && "
-            "echo 'Done. Restart the app or switch tabs to see updated data.'",
+            "echo 'Done — reloading all tabs...'",
             cwd=WFINFO_DIR, description="Refresh data from inventory",
+            reload_tabs=True,
         )
 
     def refresh_wfcd_cache(self):
