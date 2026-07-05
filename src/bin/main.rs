@@ -1,9 +1,9 @@
 use std::thread::sleep;
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use std::{error::Error, str::FromStr};
 use std::{fs::File, thread};
 use std::{
-    io::{BufRead, BufReader, Read, Seek, SeekFrom},
+    io::{BufRead, BufReader, Read, Seek, SeekFrom, Write},
     sync::mpsc::channel,
 };
 use std::{path::PathBuf, sync::mpsc};
@@ -21,45 +21,109 @@ use wfinfo::{
     ocr::{normalize_string, reward_image_to_reward_names, OCR},
     utils::fetch_prices_and_items,
 };
+use wfinfo::ownership::{notify, OwnedDb, Ownership};
 
-fn run_detection(capturer: &Window, db: &Database) {
-    let frame = capturer.capture_image().unwrap();
+fn run_detection(capturer: &Window, db: &Database, owned: &OwnedDb) {
+    let frame = match capturer.capture_image() {
+        Ok(f) => f,
+        Err(e) => {
+            error!("screenshot failed: {e}");
+            return;
+        }
+    };
     info!("Captured");
     let image = DynamicImage::ImageRgba8(frame);
-    info!("Converted");
-    let text = reward_image_to_reward_names(image, None);
-    let text = text.iter().map(|s| normalize_string(s));
-    debug!("{:#?}", text);
+    let raw_names = reward_image_to_reward_names(image, None);
+    let cleaned: Vec<String> = raw_names.iter().map(|s| normalize_string(s)).collect();
+    debug!("OCR: {:#?}", cleaned);
 
-    let items: Vec<_> = text.map(|s| db.find_item(&s, None)).collect();
-
-    let best = items
+    let resolved: Vec<(String, Ownership)> = cleaned
         .iter()
-        .map(|item| {
-            item.map(|item| {
-                item.platinum
-                    .max(item.ducats as f32 / 10.0 + item.platinum / 100.0)
-            })
-            .unwrap_or(0.0)
+        .map(|s| match db.find_item(s, None) {
+            Some(item) => {
+                let own = owned.lookup(&item.drop_name);
+                (item.drop_name.clone(), own)
+            }
+            None => {
+                warn!("could not resolve OCR text {:?} to a known item", s);
+                (format!("? {}", s), Ownership::Unknown)
+            }
         })
-        .enumerate()
-        .max_by(|a, b| a.1.total_cmp(&b.1))
-        .map(|best| best.0);
+        .collect();
 
-    for (index, item) in items.iter().enumerate() {
-        if let Some(item) = item {
-            info!(
-                "{}\n\t{}\t{}\t{}",
-                item.drop_name,
-                item.platinum,
-                item.ducats as f32 / 10.0,
-                if Some(index) == best { "<----" } else { "" }
-            );
-        } else {
-            warn!("Unknown item\n\tUnknown");
-        }
+    info!("--- relic reward ownership ---");
+    for (name, own) in &resolved {
+        info!("  {:<40}  {}", name, own.colored());
     }
-}
+
+    // Desktop notification — skipped if show_notifications=0 in config.json
+    let notifications_enabled = std::fs::read_to_string(
+        std::env::current_exe().ok()
+            .and_then(|p| p.parent().map(|d| d.join("../../config.json")))
+            .unwrap_or_else(|| PathBuf::from("config.json"))
+    )
+    .ok()
+    .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
+    .and_then(|v| v.get("show_notifications").and_then(|n| n.as_i64()))
+    .unwrap_or(1) != 0;
+
+    if notifications_enabled {
+        let any_need = resolved.iter().any(|(_, o)| matches!(o, Ownership::Need));
+        let body = resolved
+            .iter()
+            .map(|(n, o)| format!("• {}  —  {}", n, o.label()))
+            .collect::<Vec<_>>()
+            .join("\n");
+        notify(
+            "Relic rewards",
+            &body,
+            if any_need { "normal" } else { "low" },
+        );
+    }
+    // ── Write latest-detection.json for the Python overlay ───────────────
+    let rewards_json: Vec<String> = resolved
+        .iter()
+        .map(|(name, own)| {
+            let (status, count) = match own {
+                Ownership::Owned(n) => ("OWNED", *n),
+                Ownership::Need     => ("NEED", 0),
+                Ownership::Unknown  => ("UNKNOWN", 0),
+            };
+            format!(
+                r#"{{"name":{},"status":"{}","count":{}}}"#,
+                serde_json::to_string(name).unwrap_or_default(),
+                status,
+                count,
+            )
+        })
+        .collect();
+
+    let ts = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+    let state_json = format!(
+        r#"{{"timestamp":{ts},"warframe":{{"x":{x},"y":{y},"width":{w},"height":{h}}},"rewards":[{rewards}]}}"#,
+        ts      = ts,
+        x       = capturer.x(),
+        y       = capturer.y(),
+        w       = capturer.width(),
+        h       = capturer.height(),
+        rewards = rewards_json.join(","),
+    );
+
+    let data_dir = std::env::var("XDG_DATA_HOME")
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| {
+            PathBuf::from(std::env::var("HOME").unwrap_or_default()).join(".local/share")
+        })
+        .join("kiedas-orbiter");
+    let _ = std::fs::create_dir_all(&data_dir);
+    let state_path = data_dir.join("latest-detection.json");
+    match File::create(&state_path).and_then(|mut f| f.write_all(state_json.as_bytes())) {
+        Ok(_)  => info!("Wrote state file: {}", state_path.display()),
+        Err(e) => warn!("Failed to write state file: {}", e),
+    }}
 
 fn log_watcher(path: PathBuf, event_sender: mpsc::Sender<()>) {
     debug!("Path: {}", path.display());
@@ -194,6 +258,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     let (prices, items) = fetch_prices_and_items()?;
     let db = Database::load_from_file(Some(&prices), Some(&items));
 
+    // Load ownership data (owned_items.json next to the binary or in cwd)
+    let owned_path = std::env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(|d| d.join("owned_items.json")))
+        .filter(|p| p.exists())
+        .unwrap_or_else(|| PathBuf::from("owned_items.json"));
+    let owned = OwnedDb::load_or_empty(&owned_path);
+
     info!("Loaded database");
 
     let (event_sender, event_receiver) = channel();
@@ -203,7 +275,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     while let Ok(()) = event_receiver.recv() {
         info!("Capturing");
-        run_detection(warframe_window, &db);
+        run_detection(warframe_window, &db, &owned);
     }
 
     drop(OCR.lock().unwrap().take());

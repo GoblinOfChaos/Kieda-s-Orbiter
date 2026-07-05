@@ -71,7 +71,16 @@ impl OwnedDb {
 }
 
 pub fn notify(title: &str, body: &str, urgency: &str) {
+    // --transient: don't steal focus or persist in notification centre
+    // --hint=int:transient:1: extra hint for notification daemons that need it
     let _ = Command::new("notify-send")
-        .args(["--app-name=wfinfo", "--urgency", urgency, "--expire-time=4500", title, body])
+        .args([
+            "--app-name=wfinfo",
+            "--urgency", urgency,
+            "--expire-time=4500",
+            "--transient",
+            "--hint=int:transient:1",
+            title, body,
+        ])
         .spawn();
 }

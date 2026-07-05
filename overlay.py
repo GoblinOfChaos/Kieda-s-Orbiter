@@ -373,6 +373,27 @@ class RelicRecommendOverlay(_DraggableOverlay):
 
 
 def main():
+    import os, signal
+    # Kill any other overlay.py instances before starting — prevents duplicates
+    # when the autostart fires while one is already running, or after Restart.
+    my_pid = os.getpid()
+    try:
+        import subprocess
+        result = subprocess.run(
+            ["pgrep", "-f", "overlay.py"],
+            capture_output=True, text=True
+        )
+        for pid_str in result.stdout.strip().splitlines():
+            pid = int(pid_str.strip())
+            if pid != my_pid:
+                try:
+                    os.kill(pid, signal.SIGTERM)
+                    log(f"killed duplicate overlay.py (pid {pid})")
+                except ProcessLookupError:
+                    pass
+    except Exception:
+        pass
+
     app = QApplication(sys.argv)
     app.setWindowIcon(QIcon(WFINFO_ICON))
     overlay = Overlay()  # keep reference alive
