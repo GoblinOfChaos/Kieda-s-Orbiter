@@ -373,26 +373,31 @@ class RelicRecommendOverlay(_DraggableOverlay):
 
 
 def main():
-    import os, signal
-    # Kill any other overlay.py instances before starting — prevents duplicates
-    # when the autostart fires while one is already running, or after Restart.
-    my_pid = os.getpid()
+    import os, signal, fcntl
+
+    # ── Singleton lock — only one overlay.py may run at a time ──────────
+    lock_path = DATA_DIR / "overlay.lock"
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    lock_file = open(lock_path, "w")
     try:
-        import subprocess
-        result = subprocess.run(
-            ["pgrep", "-f", "overlay.py"],
-            capture_output=True, text=True
-        )
-        for pid_str in result.stdout.strip().splitlines():
-            pid = int(pid_str.strip())
-            if pid != my_pid:
-                try:
-                    os.kill(pid, signal.SIGTERM)
-                    log(f"killed duplicate overlay.py (pid {pid})")
-                except ProcessLookupError:
-                    pass
-    except Exception:
-        pass
+        fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        # Another instance already holds the lock — kill it and take over
+        try:
+            old_pid = int(lock_path.with_suffix(".pid").read_text().strip())
+            os.kill(old_pid, signal.SIGTERM)
+            log(f"killed previous overlay instance (pid {old_pid})")
+            import time as _t; _t.sleep(0.5)
+        except Exception:
+            pass
+        # Try to get the lock again
+        try:
+            fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            log("could not acquire singleton lock — exiting")
+            sys.exit(0)
+
+    lock_path.with_suffix(".pid").write_text(str(os.getpid()))
 
     app = QApplication(sys.argv)
     app.setWindowIcon(QIcon(WFINFO_ICON))
