@@ -9,9 +9,10 @@ fn local_fallback(filename: &str) -> Option<PathBuf> {
     let exe_dir = std::env::current_exe()
         .ok()
         .and_then(|p| p.parent().map(|d| d.to_path_buf()));
-    for base in exe_dir.into_iter().chain(std::iter::once(
-        std::env::current_dir().unwrap_or_default(),
-    )) {
+    for base in exe_dir
+        .into_iter()
+        .chain(std::iter::once(std::env::current_dir().unwrap_or_default()))
+    {
         let candidate = base.join(filename);
         if candidate.exists() {
             return Some(candidate);
