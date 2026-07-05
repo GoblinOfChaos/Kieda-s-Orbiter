@@ -109,43 +109,53 @@ QLabel {{ background-color: transparent; color: {FG}; }}
 QLineEdit, QTextEdit, QPlainTextEdit {{
     background-color: {BG_INPUT};
     color: {FG};
-    border: 1px solid {BORDER_BRIGHT};
+    border: 2px solid {SAP_MID};
     border-radius: 5px;
     padding: 5px 8px;
     selection-background-color: {SAP_MID};
     selection-color: #ffffff;
 }}
 QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus {{
-    border-color: {SAP_BRIGHT};
+    border: 2px solid {SAP_BRIGHT};
     background-color: {BG_PANEL};
+}}
+QLineEdit:hover, QTextEdit:hover, QPlainTextEdit:hover {{
+    border: 2px solid {SAP_BRIGHT};
 }}
 
 /* ── ComboBox ─────────────────────────────────────────────────────────── */
 QComboBox {{
     background-color: {BG_INPUT};
     color: {FG};
-    border: 1px solid {BORDER_BRIGHT};
+    border: 2px solid {SAP_MID};
     border-radius: 5px;
     padding: 5px 8px;
-    padding-right: 22px;
+    padding-right: 26px;
 }}
-QComboBox:focus {{ border-color: {SAP_BRIGHT}; }}
+QComboBox:hover {{ border: 2px solid {SAP_BRIGHT}; }}
+QComboBox:focus {{ border: 2px solid {SAP_BRIGHT}; }}
 QComboBox::drop-down {{
     subcontrol-origin: padding;
     subcontrol-position: top right;
-    width: 22px;
-    border-left: 1px solid {BORDER_BRIGHT};
-    border-top-right-radius: 5px;
-    border-bottom-right-radius: 5px;
+    width: 26px;
+    border-left: 1px solid {SAP_MID};
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+    background-color: {BG_PANEL};
+}}
+QComboBox::down-arrow {{
+    width: 10px;
+    height: 10px;
 }}
 QComboBox QAbstractItemView {{
     background-color: {BG_CARD};
     color: {FG};
     selection-background-color: {SAP_MID};
     selection-color: #ffffff;
-    border: 1px solid {SAP_MID};
+    border: 2px solid {SAP_MID};
     border-radius: 4px;
     outline: 0;
+    padding: 2px;
 }}
 
 /* ── GroupBox — sapphire border, gold title ───────────────────────────── */
@@ -417,17 +427,19 @@ QPushButton:disabled {{ background-color: {bg_panel}; color: {fg_dim}; border-co
 QLabel {{ background-color: transparent; color: {fg}; }}
 QLineEdit, QTextEdit, QPlainTextEdit {{
     background-color: {bg_input}; color: {fg};
-    border: 1px solid {border_bright}; border-radius: 5px; padding: 5px 8px;
+    border: 2px solid {accent_dim}; border-radius: 5px; padding: 5px 8px;
     selection-background-color: {accent_dim}; selection-color: #ffffff;
 }}
-QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus {{ border-color: {accent}; background-color: {bg_panel}; }}
+QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus {{ border: 2px solid {accent}; background-color: {bg_panel}; }}
+QLineEdit:hover, QTextEdit:hover, QPlainTextEdit:hover {{ border: 2px solid {accent}; }}
 QComboBox {{
     background-color: {bg_input}; color: {fg};
-    border: 1px solid {border_bright}; border-radius: 5px; padding: 5px 8px; padding-right: 22px;
+    border: 2px solid {accent_dim}; border-radius: 5px; padding: 5px 8px; padding-right: 26px;
 }}
-QComboBox:focus {{ border-color: {accent}; }}
-QComboBox::drop-down {{ subcontrol-origin: padding; subcontrol-position: top right; width: 22px; border-left: 1px solid {border_bright}; border-radius: 0 5px 5px 0; }}
-QComboBox QAbstractItemView {{ background-color: {bg_card}; color: {fg}; selection-background-color: {sel_bg}; selection-color: #ffffff; border: 1px solid {accent}; border-radius: 4px; outline: 0; }}
+QComboBox:hover {{ border: 2px solid {accent}; }}
+QComboBox:focus {{ border: 2px solid {accent}; }}
+QComboBox::drop-down {{ subcontrol-origin: padding; subcontrol-position: top right; width: 26px; border-left: 1px solid {accent_dim}; border-radius: 0 4px 4px 0; background-color: {bg_panel}; }}
+QComboBox QAbstractItemView {{ background-color: {bg_card}; color: {fg}; selection-background-color: {sel_bg}; selection-color: #ffffff; border: 2px solid {accent_dim}; border-radius: 4px; outline: 0; padding: 2px; }}
 QGroupBox {{ background-color: {bg_panel}; color: {fg_dim}; border: 1px solid {accent_dim}; border-radius: 8px; margin-top: 14px; padding-top: 12px; font-weight: 700; font-size: 12px; }}
 QGroupBox::title {{ subcontrol-origin: margin; left: 14px; padding: 0 6px; color: {gold}; background-color: {bg_deep}; }}
 QCheckBox {{ color: {fg}; spacing: 8px; background-color: transparent; }}

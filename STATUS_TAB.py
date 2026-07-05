@@ -422,15 +422,17 @@ class StatusTab(QWidget):
         self._theme_combo.setStyleSheet(
             f"QComboBox {{ background-color: {p['bg_input']}; color: {p['fg']}; "
             f"border: 2px solid {p['accent_mid']}; border-radius: 5px; "
-            f"padding: 5px 8px; padding-right: 24px; font-size: 13px; }}"
-            f"QComboBox:hover {{ border-color: {p['accent']}; }}"
+            f"padding: 5px 8px; padding-right: 26px; font-size: 13px; }}"
+            f"QComboBox:hover {{ border: 2px solid {p['accent']}; }}"
+            f"QComboBox:focus {{ border: 2px solid {p['accent']}; }}"
             f"QComboBox::drop-down {{ subcontrol-origin: padding; "
-            f"subcontrol-position: top right; width: 24px; "
-            f"border-left: 1px solid {p['accent_mid']}; }}"
+            f"subcontrol-position: top right; width: 26px; "
+            f"border-left: 1px solid {p['accent_mid']}; "
+            f"border-radius: 0 4px 4px 0; background-color: {p['bg_panel']}; }}"
             f"QComboBox QAbstractItemView {{ background-color: {p['bg_card']}; "
             f"color: {p['fg']}; selection-background-color: {p['accent_mid']}; "
-            f"selection-color: #ffffff; border: 1px solid {p['accent_mid']}; "
-            f"border-radius: 4px; outline: 0; }}"
+            f"selection-color: #ffffff; border: 2px solid {p['accent_mid']}; "
+            f"border-radius: 4px; outline: 0; padding: 2px; }}"
         )
 
         apply_btn = self._action_btn("Apply")
