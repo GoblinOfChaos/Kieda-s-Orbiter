@@ -105,12 +105,21 @@ class _DraggableOverlay(QWidget):
     def __init__(self, position_file):
         super().__init__()
         self._position_file = position_file
-        # Frameless + always-on-top, WITHOUT Tool or DoesNotAcceptFocus —
-        # those make KDE refuse to render the window on Wayland/Xwayland.
+        # Frameless, always-on-top, never steals focus.
+        # Qt.Tool: treated as a utility window by Wayland compositors — no taskbar,
+        #          no focus steal. Essential on KDE Wayland.
+        # WindowDoesNotAcceptFocus + WA_ShowWithoutActivating + WA_X11DoNotAcceptFocus:
+        #          belt-and-suspenders across X11, XWayland and Wayland.
+        # No X11BypassWindowManagerHint: that flag bypasses the compositor entirely
+        #          and can cause focus theft on XWayland sessions.
         self.setWindowFlags(
-            Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.WindowDoesNotAcceptFocus | Qt.X11BypassWindowManagerHint
+            Qt.Tool
+            | Qt.FramelessWindowHint
+            | Qt.WindowStaysOnTopHint
+            | Qt.WindowDoesNotAcceptFocus
         )
         self.setAttribute(Qt.WA_ShowWithoutActivating, True)
+        self.setAttribute(Qt.WA_X11DoNotAcceptFocus, True)
         self.setWindowOpacity(0.94)
         self.setStyleSheet(f"background-color: {BG};")
         self.setCursor(Qt.SizeAllCursor)
@@ -272,7 +281,6 @@ class Overlay(_DraggableOverlay):
             y = g.y() + g.height() - self.height() - 80
             self.move(x, y)
         self.show()
-        self.raise_()
         log(f"shown at ({x},{y}) size {self.width()}x{self.height()}, visible={self.isVisible()}")
         self.hide_timer.start(DISPLAY_DURATION_MS)
 
@@ -373,7 +381,6 @@ class RelicRecommendOverlay(_DraggableOverlay):
             y = screen.y() + 80
         self.move(x, y)
         self.show()
-        self.raise_()
         self.hide_timer.start(RELIC_RECOMMEND_TIMEOUT_MS)
         log(f"relic-recommend shown at ({x},{y}) with {len(relics)} relics")
 

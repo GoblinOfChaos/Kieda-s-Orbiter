@@ -104,12 +104,13 @@ class RivenGraderOverlay(QWidget):
         self._drag_offset = None
 
         self.setWindowFlags(
-            Qt.FramelessWindowHint
+            Qt.Tool
+            | Qt.FramelessWindowHint
             | Qt.WindowStaysOnTopHint
             | Qt.WindowDoesNotAcceptFocus
-            | Qt.X11BypassWindowManagerHint
         )
         self.setAttribute(Qt.WA_ShowWithoutActivating, True)
+        self.setAttribute(Qt.WA_X11DoNotAcceptFocus, True)
         self.setWindowOpacity(0.95)
         self.setStyleSheet(f"background-color: {BG}; color: {TEXT};")
         self.setMinimumWidth(380)
@@ -242,7 +243,6 @@ class RivenGraderOverlay(QWidget):
 
         self.adjustSize()
         self.show()
-        self.raise_()
         self.hide_timer.start(AUTO_HIDE_MS)
         print(f"[riven-overlay] showing {len(rivens)} rivens", file=sys.stderr)
 
