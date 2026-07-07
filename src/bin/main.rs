@@ -264,7 +264,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         })
         .unwrap_or((3200, 720)); // default: centre of 2560x1440 monitor at x=1920 (Kieda's setup)
     let warframe_window = Monitor::from_point(mx, my)
-        .unwrap_or_else(|_| Monitor::all().unwrap().into_iter().next().unwrap());
+        .or_else(|_| {
+            Monitor::all().and_then(|mut m| {
+                m.into_iter()
+                    .next()
+                    .ok_or(xcap::XCapError::new("no monitors found"))
+            })
+        })
+        .map_err(|e| format!("No display available for capture: {e}. Is DISPLAY set?"))?;
 
     debug!(
         "Capture source resolution: {:?}x{:?}",
