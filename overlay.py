@@ -106,16 +106,15 @@ class _DraggableOverlay(QWidget):
         super().__init__()
         self._position_file = position_file
         # Frameless, always-on-top, never steals focus.
-        # On native Wayland (gamescope/KDE), Qt.SplashScreen is the only window
-        # type that reliably maps to a surface role that does not trigger a focus
-        # transfer. Qt.Tool can still steal focus because xdg_toplevel (which Qt.Tool
-        # maps to on Wayland) sends an activation token that KDE honours.
-        # Qt.SplashScreen maps to a non-interactive surface role.
+        # Running on XWayland (via launch-overlay.sh) so the overlay stays inside
+        # gamescope's compositor context and doesn't trigger a Wayland focus release.
+        # X11BypassWindowManagerHint: tells the X11 WM not to manage this window,
+        # so it can't receive focus via normal WM mechanisms.
         self.setWindowFlags(
-            Qt.SplashScreen
-            | Qt.FramelessWindowHint
+            Qt.FramelessWindowHint
             | Qt.WindowStaysOnTopHint
             | Qt.WindowDoesNotAcceptFocus
+            | Qt.X11BypassWindowManagerHint
         )
         self.setAttribute(Qt.WA_ShowWithoutActivating, True)
         self.setAttribute(Qt.WA_X11DoNotAcceptFocus, True)

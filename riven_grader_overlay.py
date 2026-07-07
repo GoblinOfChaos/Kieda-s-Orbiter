@@ -104,10 +104,10 @@ class RivenGraderOverlay(QWidget):
         self._drag_offset = None
 
         self.setWindowFlags(
-            Qt.SplashScreen
-            | Qt.FramelessWindowHint
+            Qt.FramelessWindowHint
             | Qt.WindowStaysOnTopHint
             | Qt.WindowDoesNotAcceptFocus
+            | Qt.X11BypassWindowManagerHint
         )
         self.setAttribute(Qt.WA_ShowWithoutActivating, True)
         self.setAttribute(Qt.WA_X11DoNotAcceptFocus, True)

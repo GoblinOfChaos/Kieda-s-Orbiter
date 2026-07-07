@@ -1022,29 +1022,18 @@ class StatusTab(QWidget):
     def restart_overlay(self):
         subprocess.run(["pkill", "-f", "overlay.py"], check=False)
         time.sleep(0.5)
-        qt_lib = _find_qt_lib_dir()
-        if not qt_lib:
-            QMessageBox.critical(self, "Error",
-                "Could not find PySide6 Qt lib directory.")
-            return
-        env = os.environ.copy()
-        env["LD_LIBRARY_PATH"] = qt_lib + ":" + env.get("LD_LIBRARY_PATH", "")
-        env["XDG_DATA_HOME"] = str(Path.home() / ".local/share")
-        env["XDG_CACHE_HOME"] = str(Path.home() / ".cache")
-        # Use wayland if available, fall back to xcb
-        if env.get("WAYLAND_DISPLAY"):
-            env["QT_QPA_PLATFORM"] = "wayland"
-        else:
-            env["QT_QPA_PLATFORM"] = "xcb"
+        # Use launch-overlay.sh which forces XWayland (QT_QPA_PLATFORM=xcb)
+        # so the overlay stays inside gamescope's compositor context and does
+        # not trigger a Wayland focus release from the game.
+        launch_script = WFINFO_DIR / "launch-overlay.sh"
         log_file = open(DATA_DIR / "overlay.log", "a")
         subprocess.Popen(
-            [str(VENV_PYTHON), str(OVERLAY_SCRIPT)],
-            env=env,
+            ["/bin/bash", str(launch_script)],
             stdout=log_file,
             stderr=log_file,
             start_new_session=True,
         )
-        self.lbl_status.setText("Overlay restarted.")
+        self.lbl_status.setText("Overlay restarted (XWayland mode).")
         self._update_status()
 
     def test_overlay(self):
