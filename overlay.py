@@ -106,14 +106,13 @@ class _DraggableOverlay(QWidget):
         super().__init__()
         self._position_file = position_file
         # Frameless, always-on-top, never steals focus.
-        # Qt.Tool: treated as a utility window by Wayland compositors — no taskbar,
-        #          no focus steal. Essential on KDE Wayland.
-        # WindowDoesNotAcceptFocus + WA_ShowWithoutActivating + WA_X11DoNotAcceptFocus:
-        #          belt-and-suspenders across X11, XWayland and Wayland.
-        # No X11BypassWindowManagerHint: that flag bypasses the compositor entirely
-        #          and can cause focus theft on XWayland sessions.
+        # On native Wayland (gamescope/KDE), Qt.SplashScreen is the only window
+        # type that reliably maps to a surface role that does not trigger a focus
+        # transfer. Qt.Tool can still steal focus because xdg_toplevel (which Qt.Tool
+        # maps to on Wayland) sends an activation token that KDE honours.
+        # Qt.SplashScreen maps to a non-interactive surface role.
         self.setWindowFlags(
-            Qt.Tool
+            Qt.SplashScreen
             | Qt.FramelessWindowHint
             | Qt.WindowStaysOnTopHint
             | Qt.WindowDoesNotAcceptFocus
