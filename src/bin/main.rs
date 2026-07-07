@@ -265,7 +265,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .unwrap_or((3200, 720)); // default: centre of 2560x1440 monitor at x=1920 (Kieda's setup)
     let warframe_window = Monitor::from_point(mx, my)
         .or_else(|_| {
-            Monitor::all().and_then(|mut m| {
+            Monitor::all().and_then(|m| {
                 m.into_iter()
                     .next()
                     .ok_or(xcap::XCapError::new("no monitors found"))
