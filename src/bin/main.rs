@@ -262,7 +262,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 None
             }
         })
-        .unwrap_or((1920, 720)); // default: centre of a typical 1920×1440 secondary monitor
+        .unwrap_or((3200, 720)); // default: centre of 2560x1440 monitor at x=1920 (Kieda's setup)
     let warframe_window = Monitor::from_point(mx, my)
         .unwrap_or_else(|_| Monitor::all().unwrap().into_iter().next().unwrap());
 
