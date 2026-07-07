@@ -14,7 +14,7 @@ use global_hotkey::{hotkey::HotKey, GlobalHotKeyEvent, GlobalHotKeyManager, HotK
 use image::DynamicImage;
 use log::{debug, error, info, warn};
 use notify::{watcher, RecursiveMode, Watcher};
-use xcap::Window;
+use xcap::Monitor;
 
 use wfinfo::ownership::{notify, OwnedDb, Ownership};
 use wfinfo::{
@@ -23,7 +23,7 @@ use wfinfo::{
     utils::fetch_prices_and_items,
 };
 
-fn run_detection(capturer: &Window, db: &Database, owned: &OwnedDb) {
+fn run_detection(capturer: &Monitor, db: &Database, owned: &OwnedDb) {
     let frame = match capturer.capture_image() {
         Ok(f) => f,
         Err(e) => {
@@ -247,16 +247,31 @@ fn main() -> Result<(), Box<dyn Error>> {
         .format_target(false)
         .init();
 
-    let windows = Window::all()?;
-    let Some(warframe_window) = windows.iter().find(|x| x.title() == window_name) else {
-        return Err("Warframe window not found".into());
-    };
+    // Use Monitor capture instead of Window capture.
+    // Window::all() enumerates XWayland windows which causes gamescope to
+    // release its input grab from the game, stealing focus on every detection.
+    // Monitor::from_point() captures the whole screen without any window lookup.
+    // Use the monitor at the centre of the primary display, or override via env.
+    let (mx, my) = std::env::var("WFINFO_MONITOR_POINT")
+        .ok()
+        .and_then(|s| {
+            let parts: Vec<i32> = s.split(',').filter_map(|p| p.trim().parse().ok()).collect();
+            if parts.len() == 2 {
+                Some((parts[0], parts[1]))
+            } else {
+                None
+            }
+        })
+        .unwrap_or((1920, 720)); // default: centre of a typical 1920×1440 secondary monitor
+    let warframe_window = Monitor::from_point(mx, my)
+        .unwrap_or_else(|_| Monitor::all().unwrap().into_iter().next().unwrap());
 
     debug!(
         "Capture source resolution: {:?}x{:?}",
         warframe_window.width(),
         warframe_window.height()
     );
+    let _ = window_name; // no longer used — kept for CLI compat
 
     let (prices, items) = fetch_prices_and_items()?;
     let db = Database::load_from_file(Some(&prices), Some(&items));
