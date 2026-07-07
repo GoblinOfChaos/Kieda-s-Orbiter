@@ -3,7 +3,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use std::{error::Error, str::FromStr};
 use std::{fs::File, thread};
 use std::{
-    io::{BufRead, BufReader, Read, Seek, SeekFrom, Write},
+    io::{BufRead, BufReader, Seek, SeekFrom, Write},
     sync::mpsc::channel,
 };
 use std::{path::PathBuf, sync::mpsc};
@@ -293,7 +293,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     while let Ok(()) = event_receiver.recv() {
         info!("Capturing");
-        run_detection(warframe_window, &db, &owned);
+        run_detection(&warframe_window, &db, &owned);
     }
 
     drop(OCR.lock().unwrap().take());
