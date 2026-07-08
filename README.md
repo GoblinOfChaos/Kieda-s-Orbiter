@@ -170,6 +170,40 @@ Switch themes in **Status & Tools → UI Theme**. Six themes available:
 
 ---
 
+## Troubleshooting
+
+### App won't open after a system update (Linux)
+
+If the app stops launching after a Bazzite/Fedora system update, the Python virtual environment may have gotten corrupted or picked up a conflicting Python version. Rebuild it:
+
+```bash
+cd ~/wfinfo-ng
+rm -rf .venv
+python3.13 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+```
+
+Then relaunch from the start menu. This takes about 2 minutes and fixes most post-update issues.
+
+### Overlay focus steal on KDE Wayland / Bazzite
+
+If the relic reward overlay appears but steals focus from Warframe, the app was likely launched from a Flatpak environment (like VS Code). Always launch from your **start menu** or a clean terminal. Never from inside VS Code.
+
+### Overlay not appearing at all
+
+1. Check **Status & Tools → Live Status** — **Detector** must show "Running"
+2. If Detector shows "Not running", click **Reload Detector Config**
+3. Check that Tesseract OCR is installed: `tesseract --version`
+4. Try pressing **F12** in game to trigger the overlay manually
+
+### Inventory not updating
+
+1. Make sure Warframe is fully loaded (not on launcher/login screen)
+2. Click **Refresh Data** in Status & Tools
+3. If that doesn't help, travel to a relay and back in-game, then refresh again
+
+---
+
 ## Credits
 
 - [knoellle/wfinfo-ng](https://github.com/knoellle/wfinfo-ng) — original Rust OCR engine
