@@ -152,15 +152,16 @@ if command -v update-desktop-database &>/dev/null; then
     update-desktop-database "$DESKTOP_DIR" 2>/dev/null || true
 fi
 
-# ── 8. Install autostart entries (overlay runs on login) ─────────────────
+# ── 8. Install autostart entries (overlay + watcher run on login) ────────
 section "Autostart entries"
 
 AUTOSTART_DIR="$HOME/.config/autostart"
 mkdir -p "$AUTOSTART_DIR"
+_UID="$(id -u)"
 
-# Use wayland if available, otherwise xcb
-QT_PLATFORM_LINE='if [ -n "${WAYLAND_DISPLAY-}" ]; then QT_QPA_PLATFORM=wayland; else QT_QPA_PLATFORM=xcb; fi'
-QT_LIB_EXPR='$(echo '"$REPO_DIR"'/.venv/lib*/python*/site-packages/PySide6/Qt/lib | tr " " ":")'
+# CRITICAL: use env -i to strip any Flatpak/sandbox environment that would
+# set the wrong DBUS_SESSION_BUS_ADDRESS and cause focus stealing.
+_CLEAN_ENV="env -i HOME=\"\$HOME\" USER=\"\$USER\" LOGNAME=\"\$USER\" SHELL=/bin/bash PATH=\"\$HOME/.local/bin:\$HOME/.cargo/bin:/usr/local/bin:/usr/bin:/bin\" WAYLAND_DISPLAY=wayland-0 XDG_RUNTIME_DIR=/run/user/${_UID} DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/${_UID}/bus XDG_DATA_HOME=\"\$HOME/.local/share\" XDG_CACHE_HOME=\"\$HOME/.cache\" XDG_CURRENT_DESKTOP=KDE XDG_SESSION_TYPE=wayland"
 
 cat > "$AUTOSTART_DIR/orbiter-overlay.desktop" << AUTOSTART
 [Desktop Entry]
@@ -168,25 +169,25 @@ Icon=orbiter
 Type=Application
 Name=Kieda's Orbiter Overlay
 Comment=Pop-up overlay for Warframe relic reward ownership
-Exec=/bin/bash -c '$QT_PLATFORM_LINE; LD_LIBRARY_PATH="$QT_LIB_EXPR" QT_QPA_PLATFORM=\${QT_QPA_PLATFORM} "$REPO_DIR/.venv/bin/python" "$REPO_DIR/overlay.py" >> "\${HOME}/.local/share/kiedas-orbiter/overlay.log" 2>&1'
+Exec=/bin/bash -c '${_CLEAN_ENV} setsid ${REPO_DIR}/launch-overlay.sh >> \${HOME}/.local/share/kiedas-orbiter/overlay.log 2>&1 < /dev/null'
 X-GNOME-Autostart-enabled=true
 NoDisplay=true
 Terminal=false
 AUTOSTART
 
-cat > "$AUTOSTART_DIR/orbiter-riven-overlay.desktop" << AUTOSTART
+cat > "$AUTOSTART_DIR/orbiter-watcher.desktop" << AUTOSTART
 [Desktop Entry]
 Icon=orbiter
 Type=Application
-Name=Kieda's Orbiter Riven Grader Overlay
-Comment=Always-on-top overlay showing your graded rivens
-Exec=/bin/bash -c '$QT_PLATFORM_LINE; LD_LIBRARY_PATH="$QT_LIB_EXPR" QT_QPA_PLATFORM=\${QT_QPA_PLATFORM} "$REPO_DIR/.venv/bin/python" "$REPO_DIR/riven_grader_overlay.py" >> "\${HOME}/.local/share/kiedas-orbiter/riven-overlay.log" 2>&1'
+Name=Kieda's Orbiter Warframe Watcher
+Comment=Watches for Warframe process and restarts the detector
+Exec=/bin/bash -c '${_CLEAN_ENV} setsid ${REPO_DIR}/.venv/bin/python ${REPO_DIR}/warframe-watcher.py >> \${HOME}/.local/share/kiedas-orbiter/watcher.log 2>&1 < /dev/null'
 X-GNOME-Autostart-enabled=true
 NoDisplay=true
 Terminal=false
 AUTOSTART
 
-success "Autostart entries installed (overlay will start on login)"
+success "Autostart entries installed (overlay + watcher will start on login)"
 
 # ── Compatibility symlink: old wfinfo path → kiedas-orbiter ──────────────
 # The detector binary may write to ~/.local/share/wfinfo/ (old name).
