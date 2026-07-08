@@ -46,7 +46,16 @@ else:
 
 
 def _find_qt_lib_dirs() -> list[str]:
-    """Find all PySide6 Qt lib directories for LD_LIBRARY_PATH (Linux/Mac)."""
+    """Find PySide6 Qt lib directory for the ACTIVE Python interpreter only.
+    Using all python versions causes libQt6DBus version mismatches."""
+    import sysconfig
+    # Get the lib path for the currently running Python
+    py_ver = f"python{sys.version_info.major}.{sys.version_info.minor}"
+    for pattern in [f"lib64/{py_ver}", f"lib/{py_ver}"]:
+        candidate = VENV / pattern / "site-packages/PySide6/Qt/lib"
+        if candidate.is_dir():
+            return [str(candidate)]
+    # Fallback: all versions (old behaviour)
     dirs = []
     for lib_base in VENV.glob("lib*/python*/site-packages/PySide6/Qt/lib"):
         if lib_base.is_dir():
@@ -82,17 +91,21 @@ def _build_env() -> dict:
         else:
             env["QT_QPA_PLATFORM"] = "offscreen"
 
-        # PySide6 needs its own Qt libs on the library path
+        # PySide6 needs its own Qt libs FIRST so they take precedence over
+        # any host Qt libs that might have mismatched private API versions.
         qt_dirs = _find_qt_lib_dirs()
-        if qt_dirs:
-            existing = env.get("LD_LIBRARY_PATH", "")
-            env["LD_LIBRARY_PATH"] = ":".join(qt_dirs + ([existing] if existing else []))
-
-        # Host system libs for the Rust binary (Bazzite/immutable distros)
-        host_libs = "/run/host/usr/lib64:/run/host/usr/lib"
         existing = env.get("LD_LIBRARY_PATH", "")
-        if host_libs not in existing:
-            env["LD_LIBRARY_PATH"] = host_libs + (":" + existing if existing else "")
+        # Host libs for the Rust binary — AFTER venv Qt so Qt comes first
+        host_libs = "/run/host/usr/lib64:/run/host/usr/lib"
+        all_dirs = qt_dirs + [host_libs] + ([existing] if existing else [])
+        env["LD_LIBRARY_PATH"] = ":".join(all_dirs)
+
+        # Tell Qt to use only its own plugins, not any system ones
+        if qt_dirs:
+            qt_base = str(Path(qt_dirs[0]).parent)  # PySide6/ dir
+            env["QT_PLUGIN_PATH"] = qt_base + "/Qt/plugins"
+            # Prevent dlopen from finding host Qt via RPATH by shadowing it
+            env["LD_PRELOAD"] = ""  # clear any preloads that might interfere
 
         # Block notify-send (steals Warframe focus via desktop notification)
         import tempfile, stat
