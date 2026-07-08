@@ -107,7 +107,23 @@ else
     fi
 fi
 
-# ── 6. Install icon ───────────────────────────────────────────────────────
+# ── 6. Download warframe-api-helper ──────────────────────────────────────
+section "warframe-api-helper (inventory)"
+
+if [[ -f "$REPO_DIR/warframe-api-helper" ]]; then
+    success "warframe-api-helper already present"
+else
+    info "Downloading warframe-api-helper from GitHub..."
+    if "$REPO_DIR/.venv/bin/python" "$REPO_DIR/download_helper.py"; then
+        success "warframe-api-helper downloaded"
+    else
+        warn "Could not download warframe-api-helper."
+        warn "Inventory features won't work until it's installed."
+        warn "Run:  python download_helper.py"
+    fi
+fi
+
+# ── 7. Install icon ─────────────────────────────────────────────────────────
 section "Icon"
 
 ICON_SRC="$REPO_DIR/orbiter.svg"
@@ -123,7 +139,7 @@ else
     warn "Icon file not found — the app will launch without a custom icon."
 fi
 
-# ── 7. Install desktop entry (start menu) ────────────────────────────────
+# ── 8. Install desktop entry (start menu) ───────────────────────────────────
 section "Start menu entry"
 
 DESKTOP_DIR="$HOME/.local/share/applications"
@@ -152,7 +168,7 @@ if command -v update-desktop-database &>/dev/null; then
     update-desktop-database "$DESKTOP_DIR" 2>/dev/null || true
 fi
 
-# ── 8. Install autostart entries (overlay + watcher run on login) ────────
+# ── 9. Install autostart entries (overlay + watcher run on login) ───────────
 section "Autostart entries"
 
 AUTOSTART_DIR="$HOME/.config/autostart"
@@ -207,7 +223,7 @@ if [[ ! -e "$OLD_STATE" ]]; then
     success "Created compatibility symlink: wfinfo/ → kiedas-orbiter/"
 fi
 
-# ── 9. Make scripts executable ────────────────────────────────────────────
+# ── 10. Make scripts executable ──────────────────────────────────────────────
 chmod +x "$REPO_DIR/control-panel.sh" \
          "$REPO_DIR/launch-orbiter.sh" \
          "$REPO_DIR/update.sh" \
