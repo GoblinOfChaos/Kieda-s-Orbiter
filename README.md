@@ -89,10 +89,75 @@ update-desktop-database ~/.local/share/applications/
 
 ## Usage
 
-- **Launch**: Run `./control-panel.sh` or use the desktop entry (if installed)
-- **Inventory**: Run Warframe with `warframe-api-helper` active, then click **Refresh Data**
-- **Relic reward overlay**: The `orbiter` binary watches EE.log and pops up automatically. Press **F12** to trigger manually
-- **Riven overlay**: Opens automatically when you view a riven mod in-game
+### Getting started
+
+1. Launch the app from your start menu (search "Kieda's Orbiter")
+2. Go to **Status & Tools** and check that **Detector** shows "Running"
+3. If EE.log wasn't auto-detected, set it in **Status & Tools → File Paths**
+4. Click **Refresh Data** after running Warframe to sync your inventory
+
+---
+
+### Relic reward overlay
+
+When you crack a relic, the overlay pops up automatically showing each reward with your ownership status:
+
+- 🟢 **NEED** — you've never had this part, take it
+- 🔵 **OWNED x2** — you already have copies
+- 🟡 **CRAFTED** — you've built/mastered this before
+
+**Tips:**
+- The overlay appears ~2-3 seconds after the reward screen — it needs time to capture and process
+- **Drag it** anywhere on screen — position is remembered between sessions
+- Press **F12** to trigger it manually (useful for testing)
+- Change which monitor it appears on in **Status & Tools → Overlay Display**
+- Adjust how long it stays visible in **Status & Tools → Advanced Settings → Overlay display duration**
+
+---
+
+### Inventory sync
+
+Inventory data comes from `warframe-api-helper` which reads your game memory:
+
+1. Launch Warframe and get to the main orbiter
+2. The helper reads your inventory automatically in the background
+3. Click **Refresh Data** in **Status & Tools** to rebuild all derived data
+4. All tabs (Missing Parts, Relic Planner, etc.) update immediately
+
+---
+
+### Relic Planner
+
+1. Click **Add All Missing Parts** or **Add Never Obtained** to populate your need list
+2. The right panel shows relics ranked by how many of your needed parts they drop
+3. Green rows = relics you already own, red = vaulted, normal = unvaulted but unowned
+4. Check **Show owned relics only** to filter to just what you can run right now
+5. Double-click a part in the left panel to add it individually
+
+---
+
+### Riven Grader
+
+The riven overlay appears automatically when you view a riven in your Arsenal. It shows:
+- Grade (Great / Good / OK / Weak / Reroll)
+- Stats comparison if you just rerolled
+- All your rivens ranked by quality
+
+The grader uses roll data from `riven_good_rolls.json` — you can edit this file to customise what counts as a good roll for each weapon.
+
+---
+
+### Keeping data fresh
+
+- **Update Game Data** — refreshes item prices and the item database (~daily)
+- **Refresh WFCD Cache** — pulls fresh item data from WFCD GitHub (~weekly)
+- **Fetch Live Prices** — gets real-time platinum prices from warframe.market (takes ~5 min due to rate limits)
+
+---
+
+### Bazzite / KDE Wayland notes
+
+The overlay uses `spectacle` for screen capture via the KDE XDG portal. If the overlay appears but focus is lost from Warframe, this usually means the app was launched from a Flatpak environment (like VS Code). Always launch from your start menu or a clean terminal, not from inside VS Code.
 
 ---
 
