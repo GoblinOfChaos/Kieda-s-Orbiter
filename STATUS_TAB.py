@@ -45,7 +45,8 @@ OWNED_FILE = WFINFO_DIR / "owned_items.json"
 INVENTORY_FILE = WFINFO_DIR / "inventory.json"
 WFCD_CACHE = WFINFO_DIR / "wfcd_items_cache.json"
 OVERLAY_SCRIPT = WFINFO_DIR / "overlay.py"
-VENV_PYTHON = WFINFO_DIR / ".venv/bin/python"
+import sys as _sys
+VENV_PYTHON = WFINFO_DIR / (".venv/Scripts/python.exe" if _sys.platform == "win32" else ".venv/bin/python")
 STATE_FILE = DATA_DIR / "latest-detection.json"
 LOG_FILE = DATA_DIR / "overlay.log"
 
@@ -1021,18 +1022,14 @@ class StatusTab(QWidget):
     def restart_overlay(self):
         kill_processes("overlay.py")
         time.sleep(0.5)
-        # Use launch-overlay.sh which forces XWayland (QT_QPA_PLATFORM=xcb)
-        # so the overlay stays inside gamescope's compositor context and does
-        # not trigger a Wayland focus release from the game.
-        launch_script = WFINFO_DIR / "launch-overlay.sh"
-        log_file = open(DATA_DIR / "overlay.log", "a")
-        subprocess.Popen(
-            ["/bin/bash", str(launch_script)],
-            stdout=log_file,
-            stderr=log_file,
-            start_new_session=True,
+        from platform_utils import launch_detached, clean_env_for_launch
+        launch_detached(
+            [str(VENV_PYTHON), str(WFINFO_DIR / "launcher.py"), "overlay"],
+            cwd=WFINFO_DIR,
+            env=clean_env_for_launch(),
+            log_file=DATA_DIR / "overlay.log",
         )
-        self.lbl_status.setText("Overlay restarted (XWayland mode).")
+        self.lbl_status.setText("Overlay restarted.")
         self._update_status()
 
     def test_overlay(self):
