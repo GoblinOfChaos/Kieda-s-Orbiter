@@ -1,6 +1,6 @@
 # Kieda's Orbiter
 
-A Linux Warframe companion app. Tracks your inventory, relics, rivens, mastery progress, market prices, and live world state — all in one place.
+A Warframe companion app for **Linux and Windows**. Tracks your inventory, relics, rivens, mastery progress, market prices, and live world state — all in one place.
 
 Built on top of [wfinfo-ng](https://github.com/knoellle/wfinfo-ng) by knoellle, with a full PySide6 GUI and many additional features.
 
@@ -15,7 +15,7 @@ Built on top of [wfinfo-ng](https://github.com/knoellle/wfinfo-ng) by knoellle, 
 - **Foundry** — Items in progress or ready to claim
 - **Mod Collection** — All mods with owned counts; filter to show only missing ones
 - **Mastery Helper** — Items to level for free MR XP, sourced from your own relics
-- **Relic Planner** — Plan which relics to run for your most-needed drops
+- **Relic Planner** — Plan which relics to run for your most-needed drops (shows owned count, vaulted status)
 - **Best Relics** — Which relics give the most value right now
 - **Riven Grader** — Grade your rivens against known good rolls; live overlay when you view one in-game
 - **Market** — Prime part prices from warframe.market
@@ -28,24 +28,26 @@ Built on top of [wfinfo-ng](https://github.com/knoellle/wfinfo-ng) by knoellle, 
 
 ## Requirements
 
-- **Linux** (Windows support planned)
-- **Python 3.11+**
-- **PySide6** — installed automatically via pip
-- **Tesseract OCR** — for the relic reward overlay (`sudo apt install tesseract-ocr` / `sudo dnf install tesseract`)
-- **Rust + Cargo** — only needed to build the OCR detector binary ([rustup.rs](https://rustup.rs))
-- **Steam + Proton** — Warframe must be run through Steam (EE.log is auto-detected)
-- **warframe-api-helper** — included binary for inventory reading (Linux x86-64)
+| | Linux | Windows |
+|---|---|---|
+| **Python** | 3.11+ | 3.11+ |
+| **Tesseract OCR** | `sudo dnf install tesseract` | [Download](https://github.com/UB-Mannheim/tesseract/wiki) |
+| **Rust + Cargo** | Optional — needed to build OCR binary | Optional — needed to build OCR binary |
+| **Steam** | Steam + Proton (EE.log auto-detected) | Steam or Epic (EE.log auto-detected) |
+| **warframe-api-helper** | Auto-downloaded by installer | Auto-downloaded by installer |
 
 ---
 
 ## Installation
 
-### Windows
+### Windows — no terminal needed
 
 1. Install **[Python 3.11+](https://python.org/downloads/)** — check **"Add Python to PATH"** during install
-2. Download and unzip this repo ([Download ZIP](https://github.com/GoblinOfChaos/Kieda-s-Orbiter/archive/refs/heads/main.zip))
+2. [**Download ZIP**](https://github.com/GoblinOfChaos/Kieda-s-Orbiter/archive/refs/heads/main.zip) and unzip it anywhere
 3. Open the folder and double-click **`Install Windows.bat`**
-4. After it finishes, launch from the **Start Menu** or double-click **`Start Kieda's Orbiter.bat`**
+4. After it finishes, find **Kieda's Orbiter** in the **Start Menu**
+
+> If the Start Menu shortcut isn't there yet, double-click **`Start Kieda's Orbiter.bat`** instead.
 
 ### Linux
 
@@ -55,50 +57,17 @@ cd Kieda-s-Orbiter
 ./install.sh
 ```
 
-Or equivalently:
-```bash
-python install.py
-```
+After installing, search for **"Kieda's Orbiter"** in your application launcher.
 
-The installer will:
-1. Check for Python 3.11+ and Tesseract OCR
-2. Create a Python virtual environment and install dependencies
+Both installers will:
+1. Check Python and Tesseract
+2. Create a virtual environment and install PySide6
 3. Build the relic reward OCR binary (if Rust is installed)
 4. Download the latest Warframe item and price data
 5. Download `warframe-api-helper` for your platform
-6. Install the app icon and **add it to your start menu**
-
-After installing, search for **"Kieda's Orbiter"** in your start menu (or application launcher) to launch it.
+6. Create a start menu entry
 
 On first launch, go to **Status & Tools → File Paths** to verify your EE.log was auto-detected correctly.
-
-### Manual steps (if you prefer)
-
-<details>
-<summary>Expand for manual installation steps</summary>
-
-```bash
-# Create virtual environment
-python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
-
-# (Optional) Build the relic reward OCR detector — requires Rust
-cargo build --release --bin orbiter
-
-# Download Warframe data
-./update.sh
-
-# Install icon + start menu entry
-mkdir -p ~/.local/share/icons/hicolor/scalable/apps
-cp orbiter.svg ~/.local/share/icons/hicolor/scalable/apps/
-cp kiedas-orbiter.desktop ~/.local/share/applications/
-update-desktop-database ~/.local/share/applications/
-
-# Launch
-./control-panel.sh
-```
-
-</details>
 
 ---
 
@@ -158,37 +127,37 @@ The riven overlay appears automatically when you view a riven in your Arsenal. I
 - Stats comparison if you just rerolled
 - All your rivens ranked by quality
 
-The grader uses roll data from `riven_good_rolls.json` — you can edit this file to customise what counts as a good roll for each weapon.
-
 ---
 
 ### Keeping data fresh
 
 - **Update Game Data** — refreshes item prices and the item database (~daily)
 - **Refresh WFCD Cache** — pulls fresh item data from WFCD GitHub (~weekly)
-- **Fetch Live Prices** — gets real-time platinum prices from warframe.market (takes ~5 min due to rate limits)
+- **Fetch Live Prices** — gets real-time platinum prices from warframe.market (~5 min)
 
 ---
 
-### Bazzite / KDE Wayland notes
+### Linux / Bazzite / KDE Wayland notes
 
-The overlay uses `spectacle` for screen capture via the KDE XDG portal. If the overlay appears but focus is lost from Warframe, this usually means the app was launched from a Flatpak environment (like VS Code). Always launch from your start menu or a clean terminal, not from inside VS Code.
+The overlay uses `spectacle` for screen capture via the KDE XDG portal (no focus stealing from Warframe). Always launch from your start menu or a clean terminal — launching from inside VS Code or another Flatpak app will use the wrong DBus session and cause issues.
 
 ---
 
 ## EE.log location
 
-Auto-detected for most Steam/Proton setups. Manual path can be set in **Status & Tools → File Paths**. Default location:
+Auto-detected. Manual override available in **Status & Tools → File Paths**.
 
-```
-~/.local/share/Steam/steamapps/compatdata/230410/pfx/drive_c/users/steamuser/AppData/Local/Warframe/EE.log
-```
+| Platform | Default location |
+|---|---|
+| Linux (Steam/Proton) | `~/.local/share/Steam/steamapps/compatdata/230410/pfx/drive_c/users/steamuser/AppData/Local/Warframe/EE.log` |
+| Windows (Steam) | `%LOCALAPPDATA%\Warframe\EE.log` |
+| Windows (Epic) | `%LOCALAPPDATA%\Warframe\EE.log` |
 
 ---
 
 ## Themes
 
-Switch themes in **Status & Tools → UI Theme**. Six themes available, including colorblind-safe options based on Warframe's Focus schools:
+Switch themes in **Status & Tools → UI Theme**. Six themes available:
 
 | Theme | Style | Colorblind safe for |
 |---|---|---|
@@ -204,6 +173,7 @@ Switch themes in **Status & Tools → UI Theme**. Six themes available, includin
 ## Credits
 
 - [knoellle/wfinfo-ng](https://github.com/knoellle/wfinfo-ng) — original Rust OCR engine
+- [Sainan/warframe-api-helper](https://github.com/Sainan/warframe-api-helper) — inventory memory scanner (Windows + Linux)
 - [WFCD](https://github.com/WFCD) — warframe-items database and warframestat.us API
 - [warframe.market](https://warframe.market) — platinum price data
 - [Calamity Inc. / Sainan](https://github.com/calamity-inc) — ExportUpgrades, RivenParser
