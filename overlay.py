@@ -59,6 +59,13 @@ ERA_COLORS = {
 }
 
 
+
+def _existing_timestamp(path):
+    try:
+        return json.loads(path.read_text()).get("timestamp")
+    except (OSError, json.JSONDecodeError):
+        return None
+
 def log(msg):
     print(f"[overlay] {msg}", file=sys.stderr, flush=True)
 
@@ -112,10 +119,12 @@ class _DraggableOverlay(QWidget):
         # so it can't receive focus via normal WM mechanisms.
         self.setWindowFlags(
             Qt.FramelessWindowHint
+            | Qt.Tool
             | Qt.WindowStaysOnTopHint
             | Qt.WindowDoesNotAcceptFocus
             | Qt.X11BypassWindowManagerHint
         )
+        self.setFocusPolicy(Qt.NoFocus)
         self.setAttribute(Qt.WA_ShowWithoutActivating, True)
         self.setAttribute(Qt.WA_X11DoNotAcceptFocus, True)
         self.setWindowOpacity(0.94)
@@ -200,7 +209,7 @@ class Overlay(_DraggableOverlay):
 
         self.hide()
 
-        self.last_timestamp = None
+        self.last_timestamp = _existing_timestamp(STATE_FILE)
         self._last_warframe_geom = None
         self.crafted_parts = self._load_crafted_parts()
         self.hide_timer = QTimer(self)
@@ -327,7 +336,7 @@ class RelicRecommendOverlay(_DraggableOverlay):
             self.rows.append(row_lbl)
 
         self.hide()
-        self.last_timestamp = None
+        self.last_timestamp = _existing_timestamp(RELIC_RECOMMEND_STATE_FILE)
         self.hide_timer = QTimer(self)
         self.hide_timer.setSingleShot(True)
         self.hide_timer.timeout.connect(self.hide)
