@@ -23,12 +23,11 @@ from PySide6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
     QPushButton, QLabel, QGroupBox, QFormLayout, QTextEdit, QMessageBox,
 )
-from paths import DATA_DIR
+from paths import DATA_DIR, WFINFO_DIR
 
 WFINFO_ICON = str(Path.home() / ".local/share/icons/hicolor/scalable/apps/orbiter.svg")
 
 HOME = Path.home()
-WFINFO_DIR = HOME / "wfinfo-ng"
 HELPER_SRC = HOME / "helper-src"
 OWNED_FILE = WFINFO_DIR / "owned_items.json"
 WFCD_CACHE = WFINFO_DIR / "wfcd_items_cache.json"

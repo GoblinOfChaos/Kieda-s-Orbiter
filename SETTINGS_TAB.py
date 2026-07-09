@@ -9,7 +9,7 @@ from PySide6.QtWidgets import (
     QLineEdit, QSpinBox, QPushButton, QHBoxLayout, QMessageBox,
 )
 
-BASE = Path.home() / 'wfinfo-ng'
+from paths import WFINFO_DIR as BASE
 CONFIG_FILE = BASE / 'config.json'
 
 _FIELDS = [

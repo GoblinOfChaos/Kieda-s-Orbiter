@@ -12,14 +12,14 @@ from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
     QApplication, QWidget, QHBoxLayout, QVBoxLayout, QLabel,
 )
-from paths import DATA_DIR
+from paths import DATA_DIR, WFINFO_DIR
 
 WFINFO_ICON = str(Path.home() / ".local/share/icons/hicolor/scalable/apps/orbiter.svg")
 
 STATE_FILE = DATA_DIR / "latest-detection.json"
 POSITION_FILE = DATA_DIR / "overlay-position.json"
 CRAFTED_PARTS_FILE = DATA_DIR / "crafted_parts.json"
-CONFIG_FILE = Path.home() / "wfinfo-ng/config.json"
+CONFIG_FILE = WFINFO_DIR / "config.json"
 
 RELIC_RECOMMEND_STATE_FILE = DATA_DIR / "relic-recommend.json"
 RELIC_RECOMMEND_POSITION_FILE = DATA_DIR / "relic-recommend-position.json"

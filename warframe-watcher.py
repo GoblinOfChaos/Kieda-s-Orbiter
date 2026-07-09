@@ -7,9 +7,7 @@ import os
 import subprocess
 import time
 from pathlib import Path
-from paths import DATA_DIR
-
-WFINFO_DIR = Path.home() / "wfinfo-ng"
+from paths import DATA_DIR, WFINFO_DIR
 WFINFO_BIN = WFINFO_DIR / "target/release/orbiter"
 LOG_FILE = DATA_DIR / "orbiter.log"
 WATCHER_LOG = DATA_DIR / "watcher.log"

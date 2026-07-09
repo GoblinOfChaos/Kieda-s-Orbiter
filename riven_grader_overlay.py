@@ -22,7 +22,7 @@ from PySide6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QScrollArea, QFrame,
 )
-from paths import DATA_DIR
+from paths import DATA_DIR, WFINFO_DIR
 
 STATE_FILE = DATA_DIR / "riven-graded.json"
 PREV_STATE_FILE = DATA_DIR / "riven-graded-prev.json"
@@ -52,7 +52,7 @@ GRADE_COLORS = {
 }
 
 
-CONFIG_FILE = Path.home() / "wfinfo-ng" / "config.json"
+CONFIG_FILE = WFINFO_DIR / "config.json"
 
 
 def _load_config():

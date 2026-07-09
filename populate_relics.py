@@ -9,7 +9,7 @@ import urllib.request
 import urllib.error
 from pathlib import Path
 
-WFINFO_DIR = Path.home() / "wfinfo-ng"
+from paths import WFINFO_DIR
 INV = WFINFO_DIR / "inventory.json"
 FILT = WFINFO_DIR / "filtered_items.json"
 CACHE = WFINFO_DIR / "relic_name_mapping.json"

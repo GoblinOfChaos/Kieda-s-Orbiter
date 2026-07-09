@@ -19,12 +19,11 @@ from PySide6.QtWidgets import (
     QComboBox, QCheckBox, QTableWidget, QTableWidgetItem, QHeaderView,
     QMessageBox, QTabWidget, QDialog, QProgressBar, QPushButton,
 )
-from paths import DATA_DIR
+from paths import DATA_DIR, WFINFO_DIR
 
 WFINFO_ICON = str(Path.home() / ".local/share/icons/hicolor/scalable/apps/orbiter.svg")
 
 HOME = Path.home()
-WFINFO_DIR = HOME / "wfinfo-ng"
 OWNED_FILE = WFINFO_DIR / "owned_items.json"
 ITEMS_FILE = WFINFO_DIR / "filtered_items.json"
 PRICES_FILE = WFINFO_DIR / "prices.json"

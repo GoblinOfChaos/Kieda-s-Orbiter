@@ -8,9 +8,7 @@ import json, sys
 from pathlib import Path
 from urllib.request import urlopen, Request
 from urllib.error import URLError
-from paths import DATA_DIR
-
-WFINFO_DIR     = Path.home() / "wfinfo-ng"
+from paths import DATA_DIR, WFINFO_DIR
 INVENTORY_FILE = WFINFO_DIR / "inventory.json"
 OUTPUT_FILE    = DATA_DIR / "equipment_status.json"
 CACHE_FILE     = WFINFO_DIR / "equipment_data_cache.json"

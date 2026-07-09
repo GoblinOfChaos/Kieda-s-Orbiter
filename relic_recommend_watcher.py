@@ -15,7 +15,7 @@ import json
 import time
 from pathlib import Path
 
-WFINFO_DIR = Path.home() / "wfinfo-ng"
+from paths import DATA_DIR, WFINFO_DIR
 STATE_FILE = DATA_DIR / "relic-recommend.json"
 LOG_FILE = DATA_DIR / "relic-recommend-watcher.log"
 CRAFTED_PARTS_FILE = DATA_DIR / "crafted_parts.json"

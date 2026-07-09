@@ -10,7 +10,7 @@ from glob import glob
 from pathlib import Path
 
 try:
-    from paths import get_ee_log_path, get_inventory_path, set_ee_log_path, set_inventory_path, describe_paths, DATA_DIR
+    from paths import get_ee_log_path, get_inventory_path, set_ee_log_path, set_inventory_path, describe_paths, DATA_DIR, WFINFO_DIR
 except Exception:
     get_ee_log_path = get_inventory_path = set_ee_log_path = set_inventory_path = describe_paths = None
 
@@ -39,7 +39,6 @@ def _p():
     return get_palette()
 
 HOME = Path.home()
-WFINFO_DIR = HOME / "wfinfo-ng"
 HELPER_SRC = HOME / "helper-src"
 OWNED_FILE = WFINFO_DIR / "owned_items.json"
 INVENTORY_FILE = WFINFO_DIR / "inventory.json"

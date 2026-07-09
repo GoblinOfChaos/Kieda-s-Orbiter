@@ -11,8 +11,7 @@ from pathlib import Path
 from PySide6.QtCore import QTimer, Qt
 from PySide6.QtWidgets import QGroupBox, QGridLayout, QLabel, QPushButton, QHBoxLayout
 
-from paths import DATA_DIR
-WFINFO_DIR = Path.home() / "wfinfo-ng"
+from paths import DATA_DIR, WFINFO_DIR
 LOG_DIR    = DATA_DIR
 INVENTORY  = WFINFO_DIR / "inventory.json"
 WFINFO_BIN = WFINFO_DIR / "target/release/orbiter"
