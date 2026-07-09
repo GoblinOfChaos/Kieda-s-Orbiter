@@ -25,7 +25,7 @@ impl Ownership {
 
     pub fn colored(&self) -> String {
         match self {
-            Ownership::Owned(n) => format!("\x1b[2mOWNED x{}\x1b[0m", n),
+            Ownership::Owned(n) => format!("{}\x1b[2mOWNED x{}\x1b[0m", n),
             Ownership::Need => "\x1b[1;32mNEED\x1b[0m".to_string(),
             Ownership::Unknown => "\x1b[33mUNKNOWN\x1b[0m".to_string(),
         }
@@ -74,6 +74,8 @@ impl OwnedDb {
     }
 }
 
+// Unix-specific notification function (Linux/macOS only)
+#[cfg(not(target_os = "windows"))]
 pub fn notify(title: &str, body: &str, urgency: &str) {
     // --transient: don't steal focus or persist in notification centre
     // --hint=int:transient:1: extra hint for notification daemons that need it
@@ -89,4 +91,10 @@ pub fn notify(title: &str, body: &str, urgency: &str) {
             body,
         ])
         .spawn();
+}
+
+// Windows version: no-op since notify-send doesn't exist on Windows
+#[cfg(target_os = "windows")]
+pub fn notify(_title: &str, _body: &str, _urgency: &str) {
+    // Silent success — notifications aren't supported on Windows
 }

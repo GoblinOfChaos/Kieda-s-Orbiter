@@ -8,10 +8,12 @@ Works on Linux, Windows, and macOS. Run once after cloning:
 What it does:
   1. Checks Python version
   2. Creates a virtual environment and installs dependencies
-  3. Optionally builds the Rust OCR detector binary
+  3. Downloads pre-built binaries (warframe-api-helper + orbiter)
   4. Downloads the latest Warframe item/price data
-  5. Downloads warframe-api-helper for your platform
-  6. Creates a start menu / desktop entry so the app is launchable
+  5. Creates a start menu / desktop entry so the app is launchable
+
+Note: The Rust build step has been replaced with downloading pre-built binaries
+      from GitHub releases. This removes the need for users to install Rust.
 """
 
 import os
@@ -23,16 +25,16 @@ from pathlib import Path
 WFINFO_DIR = Path(__file__).parent
 
 IS_WINDOWS = sys.platform == "win32"
-IS_LINUX   = sys.platform.startswith("linux")
-IS_MAC     = sys.platform == "darwin"
+IS_LINUX = sys.platform.startswith("linux")
+IS_MAC = sys.platform == "darwin"
 
 # ── Colours ───────────────────────────────────────────────────────────────
-RED    = "\033[0;31m"
+RED = "\033[0;31m"
 YELLOW = "\033[1;33m"
-GREEN  = "\033[0;32m"
-CYAN   = "\033[0;36m"
-BOLD   = "\033[1m"
-RESET  = "\033[0m"
+GREEN = "\033[0;32m"
+CYAN = "\033[0;36m"
+BOLD = "\033[1m"
+RESET = "\033[0m"
 
 if IS_WINDOWS:
     # Windows cmd doesn't support ANSI by default; disable colours
@@ -59,10 +61,10 @@ section("Virtual environment")
 VENV = WFINFO_DIR / ".venv"
 if IS_WINDOWS:
     VENV_PYTHON = VENV / "Scripts" / "python.exe"
-    VENV_PIP    = VENV / "Scripts" / "pip.exe"
+    VENV_PIP = VENV / "Scripts" / "pip.exe"
 else:
     VENV_PYTHON = VENV / "bin" / "python"
-    VENV_PIP    = VENV / "bin" / "pip"
+    VENV_PIP = VENV / "bin" / "pip"
 
 if not VENV.exists():
     info("Creating virtual environment...")
@@ -92,36 +94,36 @@ else:
         warn("Install with: brew install tesseract")
 
 
-# ── 4. Build Rust detector binary (optional) ─────────────────────────────
-section("Rust OCR detector (optional)")
-DETECTOR = WFINFO_DIR / "target" / "release" / ("orbiter.exe" if IS_WINDOWS else "orbiter")
-if DETECTOR.exists():
-    success(f"Detector binary already built: {DETECTOR.name}")
-elif shutil.which("cargo"):
-    info("Building orbiter detector binary (this takes a few minutes)...")
-    result = subprocess.run(
-        ["cargo", "build", "--release", "--bin", "orbiter"],
-        cwd=str(WFINFO_DIR),
-    )
-    if result.returncode == 0:
-        success("Built target/release/orbiter")
-        # Linux: symlink wfinfo -> orbiter for compatibility
-        if IS_LINUX:
-            wfinfo = WFINFO_DIR / "target" / "release" / "wfinfo"
-            if not wfinfo.exists():
-                wfinfo.symlink_to("orbiter")
+# ── 4. Download pre-built binaries (replaces Rust build) ─────────────────
+section("Pre-built binaries")
+
+info("Downloading warframe-api-helper and orbiter from GitHub releases...")
+
+sys.path.insert(0, str(WFINFO_DIR))
+try:
+    from download_helper import download_helper
+    result = download_helper()
+    
+    if result["api_helper"] and result["orbiter"]:
+        success("Both binaries downloaded successfully!")
+    elif result["api_helper"]:
+        warn("warframe-api-helper downloaded, but orbiter is missing.")
+        warn("Relic reward OCR overlay won't work until orbiter is installed.")
     else:
-        warn("Rust build failed — relic reward overlay won't work.")
-        warn("Install Rust from https://rustup.rs and re-run this script.")
-else:
-    warn("Rust/cargo not found — skipping detector build.")
-    warn("Install Rust from https://rustup.rs, then run: cargo build --release --bin orbiter")
+        fail("Failed to download required binaries. Inventory features won't work.")
+except ImportError as e:
+    fail(f"Could not import download_helper: {e}")
+    fail("Make sure you're running this from the project directory.")
+except Exception as e:
+    warn(f"Binary download encountered an issue: {e}")
+    warn("Inventory features won't work until binaries are installed correctly.")
 
 
 # ── 5. Download Warframe data ─────────────────────────────────────────────
 section("Warframe data")
 prices = WFINFO_DIR / "prices.json"
-items  = WFINFO_DIR / "filtered_items.json"
+items = WFINFO_DIR / "filtered_items.json"
+
 if prices.exists() and items.exists():
     success("Data files already present")
     info("Run 'python update.py' any time to refresh prices and item data.")
@@ -142,27 +144,9 @@ else:
         warn("Data download failed. Run 'python update.py' later.")
 
 
-# ── 6. Download warframe-api-helper ──────────────────────────────────────
-section("warframe-api-helper")
-helper_linux   = WFINFO_DIR / "warframe-api-helper"
-helper_windows = WFINFO_DIR / "warframe-api-helper.exe"
-
-if (IS_WINDOWS and helper_windows.exists()) or (IS_LINUX and helper_linux.exists()):
-    success("warframe-api-helper already present")
-else:
-    info("Downloading warframe-api-helper...")
-    try:
-        sys.path.insert(0, str(WFINFO_DIR))
-        from download_helper import download_helper
-        download_helper()
-    except Exception as e:
-        warn(f"Could not download warframe-api-helper: {e}")
-        warn("Inventory features won't work until it's installed.")
-        warn("Run: python download_helper.py")
-
-
-# ── 7. Install icon + start menu entry ───────────────────────────────────
+# ── 6. Install icon + start menu entry ───────────────────────────────────
 section("Start menu / desktop entry")
+
 if IS_LINUX:
     uid_val = os.getuid()
     icon_dir = Path.home() / ".local/share/icons/hicolor/scalable/apps"
@@ -173,7 +157,7 @@ if IS_LINUX:
         success(f"Icon installed")
 
     autostart_dir = Path.home() / ".config/autostart"
-    apps_dir      = Path.home() / ".local/share/applications"
+    apps_dir = Path.home() / ".local/share/applications"
     autostart_dir.mkdir(parents=True, exist_ok=True)
     apps_dir.mkdir(parents=True, exist_ok=True)
 
