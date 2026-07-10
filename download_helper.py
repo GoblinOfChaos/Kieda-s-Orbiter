@@ -4,7 +4,7 @@ download_helper.py — Download warframe-api-helper and orbiter binaries.
 
 Downloads:
 1. warframe-api-helper from Sainan's GitHub releases
-2. orbiter (Rust OCR detector) from GoblinOfChaos/Kieda-s-Orbiter releases
+2. orbiter (Rust OCR detector) from GoblinOfChaos/Kiedas-Orbiter releases
 
 Called automatically by install.py / install.sh if the binaries are missing.
 Can also be run manually: python download_helper.py
@@ -25,7 +25,7 @@ from pathlib import Path
 
 WFINFO_DIR = Path(__file__).parent
 API_HELPER_REPO = "Sainan/warframe-api-helper"
-ORBITER_REPO = "GoblinOfChaos/Kieda-s-Orbiter"
+ORBITER_REPO = "GoblinOfChaos/Kiedas-Orbiter"
 GITHUB_API_HELPER = f"https://api.github.com/repos/{API_HELPER_REPO}/releases/latest"
 GITHUB_API_ORBITER = f"https://api.github.com/repos/{ORBITER_REPO}/releases/latest"
 
@@ -165,7 +165,7 @@ def download_orbiter(force: bool = False) -> bool:
         print("  Run with --force to re-download.")
         return False
 
-    print(f"Fetching orbiter release from Kieda-s-Orbiter...")
+    print(f"Fetching orbiter release from Kiedas-Orbiter...")
     try:
         release = _get_latest_release(ORBITER_REPO)
     except Exception as e:

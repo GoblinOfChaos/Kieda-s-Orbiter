@@ -43,7 +43,7 @@ Built on top of [wfinfo-ng](https://github.com/knoellle/wfinfo-ng) by knoellle, 
 ### Windows — no terminal needed
 
 1. Install **[Python 3.11+](https://python.org/downloads/)** — check **"Add Python to PATH"** during install
-2. [**Download ZIP**](https://github.com/GoblinOfChaos/Kieda-s-Orbiter/archive/refs/heads/main.zip) and unzip it anywhere
+2. [**Download ZIP**](https://github.com/GoblinOfChaos/Kiedas-Orbiter/archive/refs/heads/main.zip) and unzip it anywhere
 3. Open the folder and double-click **`Install Windows.bat`**
 4. After it finishes, find **Kieda's Orbiter** in the **Start Menu**
 
@@ -52,8 +52,8 @@ Built on top of [wfinfo-ng](https://github.com/knoellle/wfinfo-ng) by knoellle, 
 ### Linux
 
 ```bash
-git clone https://github.com/GoblinOfChaos/Kieda-s-Orbiter.git
-cd Kieda-s-Orbiter
+git clone https://github.com/GoblinOfChaos/Kiedas-Orbiter.git
+cd Kiedas-Orbiter
 ./install.sh
 ```
 

@@ -599,13 +599,13 @@ class StatusTab(QWidget):
                 try:
                     version_file = Path(__file__).parent / "VERSION"
                     current = version_file.read_text().strip() if version_file.exists() else "unknown"
-                    base_url = "https://github.com/GoblinOfChaos/Kieda-s-Orbiter/releases"
+                    base_url = "https://github.com/GoblinOfChaos/Kiedas-Orbiter/releases"
                     latest = None
 
                     # Try releases API first
                     try:
                         req = urllib.request.Request(
-                            "https://api.github.com/repos/GoblinOfChaos/Kieda-s-Orbiter/releases/latest",
+                            "https://api.github.com/repos/GoblinOfChaos/Kiedas-Orbiter/releases/latest",
                             headers={"User-Agent": "kiedas-orbiter/1.0", "Accept": "application/vnd.github+json"}
                         )
                         with urllib.request.urlopen(req, timeout=8) as r:
@@ -618,7 +618,7 @@ class StatusTab(QWidget):
                     # Fall back to tags API if no release exists yet
                     if not latest:
                         req2 = urllib.request.Request(
-                            "https://api.github.com/repos/GoblinOfChaos/Kieda-s-Orbiter/tags",
+                            "https://api.github.com/repos/GoblinOfChaos/Kiedas-Orbiter/tags",
                             headers={"User-Agent": "kiedas-orbiter/1.0", "Accept": "application/vnd.github+json"}
                         )
                         with urllib.request.urlopen(req2, timeout=8) as r:

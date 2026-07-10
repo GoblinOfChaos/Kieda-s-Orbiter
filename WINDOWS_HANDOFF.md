@@ -4,7 +4,7 @@
 
 **Kieda's Orbiter** — A Linux + Windows Warframe companion app (inventory, relics, rivens, market, relic reward OCR overlay).
 
-- **GitHub:** https://github.com/GoblinOfChaos/Kieda-s-Orbiter
+- **GitHub:** https://github.com/GoblinOfChaos/Kiedas-Orbiter
 - **Current version:** v1.2.1
 - **Language:** Python (PySide6 GUI) + Rust (OCR detector binary)
 - **Owner:** GoblinOfChaos — complete beginner, never edit files manually, always make changes directly
