@@ -147,12 +147,17 @@ class Tracker(QWidget):
             self.resize(1400, 900)
 
         try:
-            self.owned = json.loads(OWNED_FILE.read_text())
             self.items_data = json.loads(ITEMS_FILE.read_text())
         except Exception as e:
             QMessageBox.critical(self, "Load failed", str(e))
             QApplication.quit()
             return
+        try:
+            self.owned = json.loads(OWNED_FILE.read_text())
+        except (OSError, json.JSONDecodeError):
+            # No inventory synced yet (fresh install, or Warframe hasn't been
+            # launched with the helper running) — treat as owning nothing.
+            self.owned = {}
         try:
             self.crafted = set(json.loads(CRAFTED_FILE.read_text()))
         except (OSError, json.JSONDecodeError):
