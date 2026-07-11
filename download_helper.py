@@ -32,6 +32,10 @@ GITHUB_API_ORBITER = f"https://api.github.com/repos/{ORBITER_REPO}/releases/late
 IS_WINDOWS = sys.platform == "win32"
 IS_LINUX = sys.platform.startswith("linux")
 
+# Windows cmd doesn't support ANSI by default; disable colours there
+BOLD = "" if IS_WINDOWS else "\033[1m"
+RESET = "" if IS_WINDOWS else "\033[0m"
+
 # Expected asset names per platform
 API_HELPER_ASSET_NAME = {
     "win32": "warframe-api-helper.exe",
