@@ -43,7 +43,10 @@ API_HELPER_ASSET_NAME = {
 }
 
 ORBITER_ASSET_NAME = {
-    "win32": "orbiter-windows-x86_64.exe",
+    # Windows ships as a zip because orbiter.exe is dynamically linked
+    # against Tesseract/Leptonica DLLs (VCPKGRS_DYNAMIC=1) — those need to
+    # sit alongside the exe, not just a bare binary.
+    "win32": "orbiter-windows-x86_64.zip",
     "linux": "orbiter-linux-x86_64",
 }
 
@@ -191,11 +194,21 @@ def download_orbiter(force: bool = False) -> bool:
 
     url = asset["browser_download_url"]
 
-    _download_binary(url, output)
-
-    # Make executable on Linux
-    if IS_LINUX:
-        output.chmod(output.stat().st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
+    if IS_WINDOWS and asset_name.endswith(".zip"):
+        # Windows ships as a zip of orbiter.exe + the Tesseract/Leptonica
+        # DLLs it's dynamically linked against — extract everything into
+        # WFINFO_DIR so the DLLs land right next to the exe.
+        import zipfile, io
+        print(f"  Downloading {asset_name}...", flush=True)
+        with urllib.request.urlopen(url, timeout=60) as r:
+            data = r.read()
+        with zipfile.ZipFile(io.BytesIO(data)) as zf:
+            zf.extractall(WFINFO_DIR)
+        print(f"  Extracted orbiter.exe + DLLs to {WFINFO_DIR}")
+    else:
+        _download_binary(url, output)
+        if IS_LINUX:
+            output.chmod(output.stat().st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
 
     print(f"  orbiter {version} installed.")
     return True
