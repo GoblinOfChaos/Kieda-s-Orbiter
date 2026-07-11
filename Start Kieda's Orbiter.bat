@@ -7,3 +7,4 @@
 :: console attached so this doesn't pop a terminal window that would kill
 :: the app if closed.
 start "" "%~dp0.venv\Scripts\pythonw.exe" "%~dp0launcher.py" app
+exit
