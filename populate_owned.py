@@ -10,9 +10,11 @@ from pathlib import Path
 from urllib.request import Request, urlopen
 from urllib.error import URLError
 
-WFCD_URL = "https://api.warframestat.us/items/"
-CACHE_PATH = Path("wfcd_items_cache.json")
-FILTERED_PATH = Path("filtered_items.json")
+from paths import WFINFO_DIR
+
+WFCD_URL = "https://raw.githubusercontent.com/WFCD/warframe-items/master/data/json/All.json"
+CACHE_PATH = WFINFO_DIR / "wfcd_all_cache.json"
+FILTERED_PATH = WFINFO_DIR / "filtered_items.json"
 RELIC_SLOTS = ("rare1", "uncommon1", "uncommon2", "common1", "common2")
 
 

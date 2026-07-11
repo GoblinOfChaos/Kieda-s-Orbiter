@@ -30,7 +30,7 @@ WFINFO_ICON = str(Path.home() / ".local/share/icons/hicolor/scalable/apps/orbite
 HOME = Path.home()
 HELPER_SRC = HOME / "helper-src"
 OWNED_FILE = WFINFO_DIR / "owned_items.json"
-WFCD_CACHE = WFINFO_DIR / "wfcd_items_cache.json"
+WFCD_CACHE = WFINFO_DIR / "wfcd_all_cache.json"
 OVERLAY_SCRIPT = WFINFO_DIR / "overlay.py"
 VENV_PYTHON = WFINFO_DIR / ".venv/bin/python"
 STATE_FILE = DATA_DIR / "latest-detection.json"
@@ -135,7 +135,7 @@ class ControlPanel(QWidget):
         grid.addWidget(self.btn_update, 0, 0)
 
         self.btn_reset_cache = QPushButton("Reset WFCD Cache")
-        self.btn_reset_cache.setToolTip("Deletes wfcd_items_cache.json so it re-downloads")
+        self.btn_reset_cache.setToolTip("Deletes wfcd_all_cache.json so it re-downloads")
         self.btn_reset_cache.clicked.connect(self.reset_wfcd_cache)
         grid.addWidget(self.btn_reset_cache, 0, 1)
 

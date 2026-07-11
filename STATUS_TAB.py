@@ -42,7 +42,7 @@ HOME = Path.home()
 HELPER_SRC = HOME / "helper-src"
 OWNED_FILE = WFINFO_DIR / "owned_items.json"
 INVENTORY_FILE = WFINFO_DIR / "inventory.json"
-WFCD_CACHE = WFINFO_DIR / "wfcd_items_cache.json"
+WFCD_CACHE = WFINFO_DIR / "wfcd_all_cache.json"
 OVERLAY_SCRIPT = WFINFO_DIR / "overlay.py"
 import sys as _sys
 VENV_PYTHON = WFINFO_DIR / (".venv/Scripts/python.exe" if _sys.platform == "win32" else ".venv/bin/python")

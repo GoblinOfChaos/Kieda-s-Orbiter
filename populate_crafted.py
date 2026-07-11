@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 from paths import DATA_DIR, WFINFO_DIR
 INV = WFINFO_DIR / "inventory.json"
-WFCD = WFINFO_DIR / "wfcd_items_cache.json"
+WFCD = WFINFO_DIR / "wfcd_all_cache.json"
 ITEMS = WFINFO_DIR / "filtered_items.json"
 MANUAL = DATA_DIR / "crafted-before.json"
 OUT = DATA_DIR / "crafted_parts.json"
