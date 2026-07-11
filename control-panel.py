@@ -160,7 +160,7 @@ class ControlPanel(QWidget):
         grid.addWidget(self.btn_missing, 3, 0, 1, 2)
 
         self.btn_reload_cfg = QPushButton("Reload Config")
-        self.btn_reload_cfg.setToolTip("Restart wfinfo to pick up changes from ~/wfinfo-ng/config.json (trigger pattern, sleep durations, window name)")
+        self.btn_reload_cfg.setToolTip("Restart wfinfo to pick up changes from config.json (trigger pattern, sleep durations, window name)")
         self.btn_reload_cfg.clicked.connect(self.reload_config)
         grid.addWidget(self.btn_reload_cfg, 4, 0, 1, 2)
 
@@ -324,7 +324,7 @@ class ControlPanel(QWidget):
     def reload_config(self):
         self._run_command(
             "echo 'Current config:'; "
-            "cat ~/wfinfo-ng/config.json; "
+            "cat config.json; "
             "echo; echo 'Restarting orbiter...'; "
             "pkill -x orbiter || true; "
             "sleep 1; "
@@ -411,10 +411,19 @@ class ControlPanel(QWidget):
 
     def rebuild_helper(self):
         if not HELPER_SRC.exists():
-            QMessageBox.critical(self, "Missing", f"{HELPER_SRC} not found.")
+            QMessageBox.information(
+                self, "Not needed for normal use",
+                "This rebuilds warframe-api-helper from source — only useful "
+                "if you're developing it yourself.\n\n"
+                f"It expects a separate git clone at {HELPER_SRC}, which "
+                "isn't part of the normal install (install.py downloads a "
+                "pre-built binary instead, which is all you need).\n\n"
+                "If you do want to build from source, clone "
+                "https://github.com/glowseeker/warframe-api-helper there first."
+            )
             return
         self._run_command(
-            "git pull && ./build.sh && cp warframe-api-helper ~/wfinfo-ng/",
+            f"git pull && ./build.sh && cp warframe-api-helper {WFINFO_DIR}/",
             cwd=HELPER_SRC,
             description="Rebuild helper",
         )

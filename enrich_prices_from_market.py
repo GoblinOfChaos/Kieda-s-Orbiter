@@ -5,8 +5,9 @@ Caches results in wm_prices_cache.json (24h validity).
 FIXED: Validates slugs against market catalog before fetching.
 """
 import json, os, sys, time, urllib.request
+from pathlib import Path
 
-WFINFO_DIR = os.path.expanduser("~/wfinfo-ng")
+WFINFO_DIR = str(Path(__file__).parent)
 PRICES   = os.path.join(WFINFO_DIR, "prices.json")
 FILTERED = os.path.join(WFINFO_DIR, "filtered_items.json")
 CACHE    = os.path.join(WFINFO_DIR, "wm_prices_cache.json")

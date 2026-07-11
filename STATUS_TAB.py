@@ -957,7 +957,7 @@ class StatusTab(QWidget):
 
     def reload_config(self):
         self._run_command(
-            "echo 'Current config:'; cat ~/wfinfo-ng/config.json; echo; "
+            "echo 'Current config:'; cat config.json; echo; "
             "echo 'Restarting orbiter...'; pkill -x orbiter || true; sleep 1; "
             "nohup ./launch-orbiter.sh > " + str(DATA_DIR) + "/orbiter.log 2>&1 & disown; "
             "sleep 2; echo 'wfinfo restarted:'; head -15 " + str(DATA_DIR) + "/orbiter.log",
@@ -1026,10 +1026,19 @@ class StatusTab(QWidget):
 
     def rebuild_helper(self):
         if not HELPER_SRC.exists():
-            QMessageBox.critical(self, "Missing", f"{HELPER_SRC} not found.")
+            QMessageBox.information(
+                self, "Not needed for normal use",
+                "This rebuilds warframe-api-helper from source — only useful "
+                "if you're developing it yourself.\n\n"
+                f"It expects a separate git clone at {HELPER_SRC}, which "
+                "isn't part of the normal install (install.py downloads a "
+                "pre-built binary instead, which is all you need).\n\n"
+                "If you do want to build from source, clone "
+                "https://github.com/glowseeker/warframe-api-helper there first."
+            )
             return
         self._run_command(
-            "git pull && ./build.sh && cp warframe-api-helper ~/wfinfo-ng/",
+            f"git pull && ./build.sh && cp warframe-api-helper {WFINFO_DIR}/",
             cwd=HELPER_SRC, description="Rebuild helper",
         )
 

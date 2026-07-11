@@ -4,8 +4,9 @@ Fallback when api.warframestat.us/wfinfo/* is unreachable.
 Prices stubbed at 0 plat (no warframe.market integration here)."""
 import json, os, re, sys
 from collections import Counter
+from pathlib import Path
 
-WFINFO_DIR = os.path.expanduser('~/wfinfo-ng')
+WFINFO_DIR = str(Path(__file__).parent)
 CACHE    = os.path.join(WFINFO_DIR, 'wfcd_all_cache.json')
 FILTERED = os.path.join(WFINFO_DIR, 'filtered_items.json')
 PRICES   = os.path.join(WFINFO_DIR, 'prices.json')

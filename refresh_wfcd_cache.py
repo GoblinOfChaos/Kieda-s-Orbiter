@@ -2,9 +2,10 @@
 """Refresh wfcd_all_cache.json from WFCD/warframe-items GitHub raw.
 This is the SOURCE that feeds api.warframestat.us/items - bypassing the API entirely."""
 import json, os, sys, time, urllib.request
+from pathlib import Path
 
 URL = 'https://raw.githubusercontent.com/WFCD/warframe-items/master/data/json/All.json'
-OUT = os.path.expanduser('~/wfinfo-ng/wfcd_all_cache.json')
+OUT = str(Path(__file__).parent / 'wfcd_all_cache.json')
 MIN_SIZE = 10_000_000   # All.json is ~40MB; reject anything < 10MB as suspicious
 MAX_AGE_DAYS = 7
 

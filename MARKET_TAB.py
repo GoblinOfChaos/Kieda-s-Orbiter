@@ -10,9 +10,8 @@ from PySide6.QtWidgets import (
     QComboBox, QTableWidget, QTableWidgetItem, QHeaderView
 )
 from column_persistence import apply_saved_widths, remember_widths
+from paths import WFINFO_DIR as BASE
 
-HOME = Path.home()
-BASE = HOME / 'wfinfo-ng'
 PRICES_FILE = BASE / 'prices.json'
 ITEMS_FILE  = BASE / 'filtered_items.json'
 OWNED_FILE  = BASE / 'owned_items.json'
