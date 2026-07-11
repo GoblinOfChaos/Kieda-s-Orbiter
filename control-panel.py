@@ -25,7 +25,7 @@ from PySide6.QtWidgets import (
 )
 from paths import DATA_DIR, WFINFO_DIR
 
-WFINFO_ICON = str(Path.home() / ".local/share/icons/hicolor/scalable/apps/orbiter.svg")
+WFINFO_ICON = str(WFINFO_DIR / "orbiter.svg")
 
 HOME = Path.home()
 HELPER_SRC = HOME / "helper-src"
