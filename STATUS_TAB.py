@@ -386,14 +386,17 @@ class StatusTab(QWidget):
                 # slots — without it, that bool binds positionally to
                 # 'title' instead, silently breaking the dialog call.
                 #
-                # DontUseNativeDialog: native dialogs route through
-                # xdg-desktop-portal, which is often missing/misconfigured
-                # on minimal or fresh Linux installs (VMs especially) and
-                # fails silently instead of showing an error. Qt's own
-                # built-in dialog works everywhere without that dependency.
+                # DontUseNativeDialog (Linux only): native dialogs route
+                # through xdg-desktop-portal, which is often missing or
+                # misconfigured on minimal/fresh Linux installs (VMs
+                # especially) and fails silently instead of showing an
+                # error. On Windows the native dialog is what correctly
+                # understands OneDrive's cloud-placeholder files — Qt's
+                # own built-in dialog shows those folders as empty.
+                opts = QFileDialog.Option.DontUseNativeDialog if sys.platform.startswith("linux") else QFileDialog.Option(0)
                 path, _ = QFileDialog.getOpenFileName(
                     self, title, str(Path.home()), filt,
-                    options=QFileDialog.Option.DontUseNativeDialog,
+                    options=opts,
                 )
                 if path: e.setText(path)
             brw.clicked.connect(_browse)
