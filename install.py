@@ -329,6 +329,9 @@ Terminal=false
     success("Desktop entry + autostart files installed")
 
 elif IS_WINDOWS:
+    icon_path = WFINFO_DIR / "orbiter.ico"
+    icon_line = f"$Shortcut.IconLocation = '{icon_path}'" if icon_path.exists() else ""
+
     # Create a Start Menu shortcut via PowerShell
     start_menu = Path(os.environ.get("APPDATA", "")) / "Microsoft/Windows/Start Menu/Programs"
     start_menu.mkdir(parents=True, exist_ok=True)
@@ -341,6 +344,7 @@ $Shortcut.TargetPath = '{VENV_PYTHON}'
 $Shortcut.Arguments = '"{launcher}" app'
 $Shortcut.WorkingDirectory = '{WFINFO_DIR}'
 $Shortcut.Description = "Kieda's Orbiter — Warframe Companion"
+{icon_line}
 $Shortcut.Save()
 """
     result = subprocess.run(["powershell", "-Command", ps_script], capture_output=True)
@@ -349,6 +353,27 @@ $Shortcut.Save()
     else:
         warn("Could not create Start Menu shortcut automatically.")
         warn(f"To launch manually: python {launcher} app")
+
+    # Desktop shortcut to the .bat launcher, with the Orbiter icon (the .bat
+    # file itself can't show a custom icon — only a shortcut to it can).
+    desktop = Path(os.environ.get("USERPROFILE", "")) / "Desktop"
+    bat_path = WFINFO_DIR / "Start Kieda's Orbiter.bat"
+    if desktop.exists() and bat_path.exists():
+        desktop_lnk = desktop / "Kieda's Orbiter.lnk"
+        ps_script2 = f"""
+$WshShell = New-Object -comObject WScript.Shell
+$Shortcut = $WshShell.CreateShortcut('{desktop_lnk}')
+$Shortcut.TargetPath = '{bat_path}'
+$Shortcut.WorkingDirectory = '{WFINFO_DIR}'
+$Shortcut.Description = "Kieda's Orbiter — Warframe Companion"
+{icon_line}
+$Shortcut.Save()
+"""
+        result2 = subprocess.run(["powershell", "-Command", ps_script2], capture_output=True)
+        if result2.returncode == 0:
+            success("Desktop shortcut created")
+        else:
+            warn("Could not create desktop shortcut automatically.")
 
 elif IS_MAC:
     warn("macOS: no automatic desktop entry — launch with: python launcher.py app")
