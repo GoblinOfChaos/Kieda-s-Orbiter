@@ -34,7 +34,8 @@ def refresh():
         os.remove(tmp); raise SystemExit(f"FAIL: only {total} bytes (need >{MIN_SIZE})")
     # Validate JSON
     try:
-        data = json.load(open(tmp))
+        with open(tmp, encoding='utf-8') as f:
+            data = json.load(f)
         assert isinstance(data, list) and len(data) > 5000, "wrong shape"
     except Exception as e:
         os.remove(tmp); raise SystemExit(f"FAIL: validation failed - {e}")

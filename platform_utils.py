@@ -98,11 +98,13 @@ def launch_detached(
         kwargs["stderr"] = subprocess.DEVNULL
 
     if IS_WINDOWS:
-        # On Windows, DETACHED_PROCESS prevents a console window appearing
-        import ctypes
-        DETACHED_PROCESS = 0x00000008
-        CREATE_NEW_PROCESS_GROUP = 0x00000200
-        kwargs["creationflags"] = DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
+        # DETACHED_PROCESS does NOT suppress a console — for a console-
+        # subsystem child (python.exe, orbiter.exe) it actually makes
+        # Windows allocate a brand new blank one, since a detached console
+        # process still needs *a* console. CREATE_NO_WINDOW is the flag
+        # that means "no console window, ever, for this process."
+        CREATE_NO_WINDOW = 0x08000000
+        kwargs["creationflags"] = CREATE_NO_WINDOW
     else:
         # On Linux/Mac, start_new_session detaches from the terminal
         kwargs["start_new_session"] = True

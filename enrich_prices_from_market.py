@@ -111,7 +111,8 @@ def main():
     for era in f["relics"].values():
         for r in era.values():
             for slot in ("rare1","uncommon1","uncommon2","common1","common2","common3"):
-                names.add(r[slot])
+                if r.get(slot):
+                    names.add(r[slot])
     names = sorted(names)
     print(f"Need prices for {len(names)} items")
 
