@@ -4,6 +4,7 @@ wfinfo pop-up overlay (PySide6, KDE-friendly window flags).
 """
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -30,6 +31,14 @@ def _load_config():
         return json.loads(CONFIG_FILE.read_text())
     except Exception:
         return {}
+
+
+def _running_under_gamescope() -> bool:
+    """gamescope (Steam's nested Wayland compositor for the game) sets this
+    env var on everything it launches, including our overlay when it's
+    started as part of the same session. On a normal desktop compositor
+    (regular KDE/GNOME Wayland or X11), this won't be set."""
+    return bool(os.environ.get("GAMESCOPE_WAYLAND_DISPLAY"))
 
 
 _cfg = _load_config()
@@ -115,15 +124,22 @@ class _DraggableOverlay(QWidget):
         # Frameless, always-on-top, never steals focus.
         # Running on XWayland (via launch-overlay.sh) so the overlay stays inside
         # gamescope's compositor context and doesn't trigger a Wayland focus release.
-        # X11BypassWindowManagerHint: tells the X11 WM not to manage this window,
-        # so it can't receive focus via normal WM mechanisms.
-        self.setWindowFlags(
+        flags = (
             Qt.FramelessWindowHint
             | Qt.Tool
             | Qt.WindowStaysOnTopHint
             | Qt.WindowDoesNotAcceptFocus
-            | Qt.X11BypassWindowManagerHint
         )
+        if _running_under_gamescope():
+            # X11BypassWindowManagerHint: tells the X11 WM not to manage this
+            # window at all (no WM-mediated positioning/sizing/input), which
+            # is what stops gamescope from releasing its input grab on the
+            # game. On a normal desktop WM this isn't needed and actively
+            # breaks drag-to-move and predictable sizing/positioning, since
+            # the WM is never involved in placing or routing input to the
+            # window at all.
+            flags |= Qt.X11BypassWindowManagerHint
+        self.setWindowFlags(flags)
         self.setFocusPolicy(Qt.NoFocus)
         self.setAttribute(Qt.WA_ShowWithoutActivating, True)
         self.setAttribute(Qt.WA_X11DoNotAcceptFocus, True)

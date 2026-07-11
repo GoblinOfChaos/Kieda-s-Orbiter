@@ -13,6 +13,7 @@ the next time inventory is refreshed.
 """
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -23,6 +24,14 @@ from PySide6.QtWidgets import (
     QScrollArea, QFrame,
 )
 from paths import DATA_DIR, WFINFO_DIR
+
+
+def _running_under_gamescope() -> bool:
+    """gamescope (Steam's nested Wayland compositor for the game) sets this
+    env var on everything it launches. On a normal desktop compositor
+    (regular KDE/GNOME Wayland or X11), this won't be set."""
+    return bool(os.environ.get("GAMESCOPE_WAYLAND_DISPLAY"))
+
 
 STATE_FILE = DATA_DIR / "riven-graded.json"
 PREV_STATE_FILE = DATA_DIR / "riven-graded-prev.json"
@@ -103,12 +112,17 @@ class RivenGraderOverlay(QWidget):
         self._last_ts = None
         self._drag_offset = None
 
-        self.setWindowFlags(
+        flags = (
             Qt.FramelessWindowHint
             | Qt.WindowStaysOnTopHint
             | Qt.WindowDoesNotAcceptFocus
-            | Qt.X11BypassWindowManagerHint
         )
+        if _running_under_gamescope():
+            # Only needed to stop gamescope from releasing its input grab on
+            # the game — on a normal desktop WM it removes the WM from
+            # positioning/sizing/input entirely, breaking drag-to-move.
+            flags |= Qt.X11BypassWindowManagerHint
+        self.setWindowFlags(flags)
         self.setAttribute(Qt.WA_ShowWithoutActivating, True)
         self.setAttribute(Qt.WA_X11DoNotAcceptFocus, True)
         self.setWindowOpacity(0.95)
