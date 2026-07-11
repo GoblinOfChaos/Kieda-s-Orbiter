@@ -1,10 +1,10 @@
 @echo off
-title Kieda's Orbiter — Installer
+title Kieda's Orbiter - Installer
 color 0B
 
 echo.
 echo  ===================================================
-echo   Kieda's Orbiter — Windows Installer
+echo   Kieda's Orbiter - Windows Installer
 echo  ===================================================
 echo.
 
