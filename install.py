@@ -48,6 +48,31 @@ def fail(msg):    print(f"{RED}✗{RESET}  {msg}"); sys.exit(1)
 def section(msg): print(f"\n{BOLD}── {msg} ──────────────────────────────────{RESET}")
 
 
+def _add_windows_user_path(folder: str) -> bool:
+    """Add folder to the current user's PATH registry value if not already
+    present. Needed because winget's silent Tesseract install doesn't
+    reliably check the installer's "Add to PATH" option the way running
+    it interactively does. Returns True if folder ends up in the value."""
+    import winreg
+    try:
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment", 0, winreg.KEY_ALL_ACCESS)
+    except OSError:
+        return False
+    try:
+        try:
+            current, _ = winreg.QueryValueEx(key, "Path")
+        except FileNotFoundError:
+            current = ""
+        parts = [p for p in current.split(";") if p]
+        if folder in parts:
+            return True
+        parts.append(folder)
+        winreg.SetValueEx(key, "Path", 0, winreg.REG_EXPAND_SZ, ";".join(parts))
+        return True
+    finally:
+        winreg.CloseKey(key)
+
+
 # ── 1. Check Python version ───────────────────────────────────────────────
 section("Python")
 if sys.version_info < (3, 11):
@@ -113,6 +138,10 @@ else:
         if shutil.which("winget"):
             install_cmd = ["winget", "install", "--id", "UB-Mannheim.TesseractOCR", "-e",
                             "--accept-package-agreements", "--accept-source-agreements"]
+            # winget's silent install doesn't reliably check the installer's
+            # "Add to PATH" box the way running it interactively does, so we
+            # can't trust tesseract to be findable right after this succeeds.
+            needs_reboot = True
         else:
             warn("winget not found. Download manually from:")
             warn("  https://github.com/UB-Mannheim/tesseract/wiki")
@@ -129,11 +158,17 @@ else:
             warn("Note: this requires a reboot before Tesseract becomes usable.")
         if _prompt_yes_no("Install it now?"):
             if _try_run(install_cmd):
+                if IS_WINDOWS:
+                    for candidate in (r"C:\Program Files\Tesseract-OCR",
+                                       r"C:\Program Files (x86)\Tesseract-OCR"):
+                        if (Path(candidate) / "tesseract.exe").exists():
+                            _add_windows_user_path(candidate)
+                            break
                 if shutil.which("tesseract"):
                     tesseract_missing = False
                     success("Tesseract installed successfully.")
                 elif needs_reboot:
-                    warn("Layered — reboot, then re-run this installer to confirm.")
+                    warn("Installed — reboot, then re-run this installer to confirm.")
                 else:
                     warn("Install command finished but 'tesseract' still isn't on PATH.")
             else:
