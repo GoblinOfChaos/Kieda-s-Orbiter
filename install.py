@@ -7,10 +7,11 @@ Works on Linux, Windows, and macOS. Run once after cloning:
 
 What it does:
   1. Checks Python version
-  2. Creates a virtual environment and installs dependencies
-  3. Downloads pre-built binaries (warframe-api-helper + orbiter)
-  4. Downloads the latest Warframe item/price data
-  5. Creates a start menu / desktop entry so the app is launchable
+  2. Checks for Tesseract OCR, offers to install it if missing
+  3. Creates a virtual environment and installs dependencies
+  4. Downloads pre-built binaries (warframe-api-helper + orbiter)
+  5. Downloads the latest Warframe item/price data
+  6. Creates a start menu / desktop entry so the app is launchable
 
 Note: The Rust build step has been replaced with downloading pre-built binaries
       from GitHub releases. This removes the need for users to install Rust.
@@ -55,7 +56,93 @@ if sys.version_info < (3, 11):
 success(f"Python {sys.version.split()[0]}")
 
 
-# ── 2. Virtual environment ────────────────────────────────────────────────
+# ── 2. Check Tesseract ─────────────────────────────────────────────────────
+section("Tesseract OCR")
+
+
+def _prompt_yes_no(question: str, default_yes: bool = True) -> bool:
+    if not sys.stdin.isatty():
+        return False
+    suffix = "[Y/n]" if default_yes else "[y/N]"
+    try:
+        answer = input(f"  {question} {suffix} ").strip().lower()
+    except (EOFError, KeyboardInterrupt):
+        print()
+        return False
+    if not answer:
+        return default_yes
+    return answer.startswith("y")
+
+
+def _try_run(cmd: list[str]) -> bool:
+    info(f"Running: {' '.join(cmd)}")
+    try:
+        result = subprocess.run(cmd)
+        return result.returncode == 0
+    except FileNotFoundError:
+        return False
+
+
+tesseract_missing = False
+if shutil.which("tesseract"):
+    result = subprocess.run(["tesseract", "--version"], capture_output=True, text=True)
+    success(f"Tesseract found: {result.stdout.splitlines()[0]}")
+else:
+    tesseract_missing = True
+    warn("Tesseract not found — relic reward OCR overlay won't work without it.")
+
+    install_cmd = None
+    needs_reboot = False
+    if IS_LINUX:
+        is_atomic = shutil.which("rpm-ostree") is not None
+        has_brew = shutil.which("brew") is not None
+        if has_brew:
+            install_cmd = ["brew", "install", "tesseract"]
+        elif is_atomic:
+            warn("This is an atomic/immutable distro (Fedora Silverblue, Bazzite, etc).")
+            warn("Plain 'dnf install' won't work on the host.")
+            install_cmd = ["sudo", "rpm-ostree", "install", "-y", "tesseract"]
+            needs_reboot = True
+        elif shutil.which("apt-get"):
+            install_cmd = ["sudo", "apt-get", "install", "-y", "tesseract-ocr"]
+        elif shutil.which("dnf"):
+            install_cmd = ["sudo", "dnf", "install", "-y", "tesseract"]
+        elif shutil.which("pacman"):
+            install_cmd = ["sudo", "pacman", "-S", "--noconfirm", "tesseract"]
+    elif IS_WINDOWS:
+        if shutil.which("winget"):
+            install_cmd = ["winget", "install", "--id", "UB-Mannheim.TesseractOCR", "-e",
+                            "--accept-package-agreements", "--accept-source-agreements"]
+        else:
+            warn("winget not found. Download manually from:")
+            warn("  https://github.com/UB-Mannheim/tesseract/wiki")
+    elif IS_MAC:
+        if shutil.which("brew"):
+            install_cmd = ["brew", "install", "tesseract"]
+        else:
+            warn("Homebrew not found. Install it from https://brew.sh, then:")
+            warn("  brew install tesseract")
+
+    if install_cmd:
+        warn(f"Install command: {' '.join(install_cmd)}")
+        if needs_reboot:
+            warn("Note: this requires a reboot before Tesseract becomes usable.")
+        if _prompt_yes_no("Install it now?"):
+            if _try_run(install_cmd):
+                if shutil.which("tesseract"):
+                    tesseract_missing = False
+                    success("Tesseract installed successfully.")
+                elif needs_reboot:
+                    warn("Layered — reboot, then re-run this installer to confirm.")
+                else:
+                    warn("Install command finished but 'tesseract' still isn't on PATH.")
+            else:
+                warn("Install command failed. Run it manually, or check the error above.")
+        else:
+            warn("Skipped. Run the command above manually any time before playing.")
+
+
+# ── 3. Virtual environment ────────────────────────────────────────────────
 section("Virtual environment")
 
 VENV = WFINFO_DIR / ".venv"
@@ -77,35 +164,6 @@ info("Installing Python dependencies...")
 subprocess.run([str(VENV_PIP), "install", "--quiet", "--upgrade", "pip"], check=True)
 subprocess.run([str(VENV_PIP), "install", "--quiet", "-r", str(WFINFO_DIR / "requirements.txt")], check=True)
 success("Python dependencies installed (PySide6, psutil)")
-
-
-# ── 3. Check Tesseract ────────────────────────────────────────────────────
-section("Tesseract OCR")
-tesseract_missing = False
-if shutil.which("tesseract"):
-    result = subprocess.run(["tesseract", "--version"], capture_output=True, text=True)
-    success(f"Tesseract found: {result.stdout.splitlines()[0]}")
-else:
-    tesseract_missing = True
-    warn("Tesseract not found — relic reward OCR overlay won't work.")
-    if IS_LINUX:
-        is_atomic = shutil.which("rpm-ostree") is not None
-        has_brew = shutil.which("brew") is not None
-        if is_atomic and has_brew:
-            warn("This is an atomic/immutable distro (Fedora Silverblue, Bazzite, etc).")
-            warn("Plain 'dnf install' won't work on the host. Use Homebrew instead:")
-            warn("  brew install tesseract")
-        elif is_atomic:
-            warn("This is an atomic/immutable distro (Fedora Silverblue, Bazzite, etc).")
-            warn("'sudo dnf install' will NOT work on the host system. Either:")
-            warn("  rpm-ostree install tesseract   (layers the package — requires a reboot)")
-            warn("  OR install Homebrew (https://brew.sh) then: brew install tesseract")
-        else:
-            warn("Install with: sudo dnf install tesseract  OR  sudo apt install tesseract-ocr")
-    elif IS_WINDOWS:
-        warn("Download from: https://github.com/UB-Mannheim/tesseract/wiki")
-    elif IS_MAC:
-        warn("Install with: brew install tesseract")
 
 
 # ── 4. Download pre-built binaries (replaces Rust build) ─────────────────
