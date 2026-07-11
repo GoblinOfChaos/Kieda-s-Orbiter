@@ -226,8 +226,7 @@ fi
 # ── 10. Make scripts executable ──────────────────────────────────────────────
 chmod +x "$REPO_DIR/control-panel.sh" \
          "$REPO_DIR/launch-orbiter.sh" \
-         "$REPO_DIR/update.sh" \
-         "$REPO_DIR/missing-parts.py" 2>/dev/null || true
+         "$REPO_DIR/update.sh" 2>/dev/null || true
 
 # ── Done ──────────────────────────────────────────────────────────────────
 echo
