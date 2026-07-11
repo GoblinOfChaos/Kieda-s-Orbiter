@@ -891,34 +891,56 @@ class StatusTab(QWidget):
         for b in self._all_buttons():
             b.setEnabled(enabled)
 
-    def _run_command(self, cmd, cwd, description, reload_tabs=False):
+    def _run_command(self, steps, cwd, description, reload_tabs=False):
+        """Run a sequence of commands, each an argv list (e.g. [py, 'script.py',
+        'arg']) — no shell involved, so this works identically on Linux and
+        Windows. Stops the sequence on the first non-zero exit, mirroring
+        what bash '&&' chaining did in the old single-string version."""
         if self.process and self.process.state() != QProcess.NotRunning:
             QMessageBox.warning(self, "Busy", "Another command is already running.")
             return
         self._pending_reload_tabs = reload_tabs
+        self._pending_steps = [list(s) for s in steps]
+        self._pending_cwd = cwd
         self._set_buttons_enabled(False)
         self.lbl_status.setText(f"Running: {description}")
         self.cmd_text.clear()
         self.cmd_text.append(f"=== {description} ===\n")
+        self._run_next_step()
+
+    def _run_next_step(self):
+        if not self._pending_steps:
+            self._process_finished(0, None)
+            return
+        argv = self._pending_steps.pop(0)
+        self.cmd_text.append(f"$ {' '.join(str(a) for a in argv)}")
 
         self.process = QProcess(self)
         self.process.setProcessChannelMode(QProcess.MergedChannels)
         self.process.readyReadStandardOutput.connect(self._process_output)
-        self.process.finished.connect(self._process_finished)
+        self.process.finished.connect(self._step_finished)
         self.process.errorOccurred.connect(self._process_error)
-        self.process.setWorkingDirectory(str(cwd))
-        self.process.start("/bin/bash", ["-c", cmd])
+        self.process.setWorkingDirectory(str(self._pending_cwd))
+        self.process.start(str(argv[0]), [str(a) for a in argv[1:]])
+
+    def _step_finished(self, code, status):
+        if code != 0:
+            self._process_finished(code, status)
+            return
+        self._run_next_step()
 
     def _process_error(self, error):
-        # Fires when the process fails to even start (e.g. /bin/bash
-        # doesn't exist on Windows) — without this, QProcess never emits
-        # 'finished' in that case and the UI hangs forever on "Running:..."
-        # with every button disabled, since only 'finished' was handled.
+        # Fires when a step's program fails to even start (bad path, not
+        # executable, etc). Without this, QProcess never emits 'finished'
+        # in that case and the UI hangs forever on "Running:..." with
+        # every button disabled, since only 'finished' was handled before.
         if error == QProcess.FailedToStart:
-            self.cmd_text.append("\n=== Failed to start: /bin/bash not found on this system ===")
-            self.lbl_status.setText("Failed to start (no /bin/bash)")
+            argv = self.process.program() if self.process else "?"
+            self.cmd_text.append(f"\n=== Failed to start: {argv} ===")
+            self.lbl_status.setText("Failed to start")
             self._set_buttons_enabled(True)
             self.process = None
+            self._pending_steps = []
 
     def _process_output(self):
         if self.process:
@@ -971,13 +993,55 @@ class StatusTab(QWidget):
     # ── Button handlers ───────────────────────────────────────────────────
 
     def reload_config(self):
-        self._run_command(
-            "echo 'Current config:'; cat config.json; echo; "
-            "echo 'Restarting orbiter...'; pkill -x orbiter || true; sleep 1; "
-            "nohup ./launch-orbiter.sh > " + str(DATA_DIR) + "/orbiter.log 2>&1 & disown; "
-            "sleep 2; echo 'wfinfo restarted:'; head -15 " + str(DATA_DIR) + "/orbiter.log",
-            cwd=WFINFO_DIR, description="Reload orbiter config",
-        )
+        if self.process and self.process.state() != QProcess.NotRunning:
+            QMessageBox.warning(self, "Busy", "Another command is already running.")
+            return
+        self._set_buttons_enabled(False)
+        self.lbl_status.setText("Running: Reload orbiter config")
+        self.cmd_text.clear()
+        self.cmd_text.append("=== Reload orbiter config ===\n")
+        try:
+            self.cmd_text.append("Current config:\n" + (WFINFO_DIR / "config.json").read_text())
+        except OSError as e:
+            self.cmd_text.append(f"(could not read config.json: {e})")
+        self.cmd_text.append("\nRestarting orbiter...")
+
+        killed = kill_processes("orbiter")
+        self.cmd_text.append(f"Stopped {killed} running orbiter process(es).")
+        # QTimer instead of time.sleep — this runs on the GUI thread, and a
+        # real sleep() here would freeze the whole window for a few seconds.
+        QTimer.singleShot(1000, self._reload_config_launch)
+
+    def _reload_config_launch(self):
+        from platform_utils import launch_detached, clean_env_for_launch, IS_LINUX
+        log_file = DATA_DIR / "orbiter.log"
+        try:
+            if IS_LINUX:
+                # launch-orbiter.sh handles Bazzite/gamescope-specific setup
+                # (DISPLAY detection, host libs, portal bus) that Windows
+                # simply doesn't need — there we can launch the exe directly.
+                launch_detached(["./launch-orbiter.sh"], cwd=WFINFO_DIR,
+                                 env=clean_env_for_launch(), log_file=log_file)
+            else:
+                launch_detached([str(WFINFO_DIR / "orbiter.exe")], cwd=WFINFO_DIR,
+                                 log_file=log_file)
+        except OSError as e:
+            self.cmd_text.append(f"ERROR: failed to launch orbiter: {e}")
+            self.lbl_status.setText("Failed")
+            self._set_buttons_enabled(True)
+            return
+        QTimer.singleShot(2000, self._reload_config_report)
+
+    def _reload_config_report(self):
+        log_file = DATA_DIR / "orbiter.log"
+        try:
+            log_tail = log_file.read_text().splitlines()[-15:]
+        except OSError:
+            log_tail = ["(no log yet)"]
+        self.cmd_text.append("orbiter restarted:\n" + "\n".join(log_tail))
+        self.lbl_status.setText("Done")
+        self._set_buttons_enabled(True)
+        self._update_status()
 
     def refresh_inventory(self):
         # warframe-api-helper reads inventory directly from Warframe's own
@@ -991,7 +1055,8 @@ class StatusTab(QWidget):
             )
             return
 
-        helper = WFINFO_DIR / "warframe-api-helper"
+        from download_helper import API_HELPER_OUTPUT_PATH
+        helper = API_HELPER_OUTPUT_PATH.get(sys.platform, WFINFO_DIR / "warframe-api-helper")
         if not helper.exists():
             QMessageBox.warning(
                 self, "Helper not installed",
@@ -1000,32 +1065,37 @@ class StatusTab(QWidget):
             )
             return
 
+        py = str(VENV_PYTHON)
         self._run_command(
-            "./warframe-api-helper && "
-            "python3 populate_owned.py inventory.json owned_items.json && "
-            "python3 populate_crafted.py && python3 populate_relics.py && "
-            "python3 populate_equipment.py && python3 record_stats_snapshot.py && "
-            "echo 'Done — reloading all tabs...'",
+            [
+                [str(helper)],
+                [py, "populate_owned.py", "inventory.json", "owned_items.json"],
+                [py, "populate_crafted.py"],
+                [py, "populate_relics.py"],
+                [py, "populate_equipment.py"],
+                [py, "record_stats_snapshot.py"],
+            ],
             cwd=WFINFO_DIR, description="Refresh data from inventory",
             reload_tabs=True,
         )
 
     def refresh_wfcd_cache(self):
         self._run_command(
-            "python3 refresh_wfcd_cache.py --force && "
-            "echo 'Cache refreshed. Run Update Warframe Data to rebuild.'",
+            [[str(VENV_PYTHON), "refresh_wfcd_cache.py", "--force"]],
             cwd=WFINFO_DIR, description="Refresh WFCD cache from GitHub",
         )
 
     def fetch_real_prices(self):
         self._run_command(
-            "python3 enrich_prices_from_market.py && echo 'Prices updated.'",
+            [[str(VENV_PYTHON), "enrich_prices_from_market.py"]],
             cwd=WFINFO_DIR, description="Fetch real prices from warframe.market",
         )
 
     def update_data(self):
-        self._run_command("./update.sh", cwd=WFINFO_DIR,
-                          description="Update Warframe data")
+        self._run_command(
+            [[str(VENV_PYTHON), "update_data.py"]],
+            cwd=WFINFO_DIR, description="Update Warframe data",
+        )
 
     def reset_wfcd_cache(self):
         try:
@@ -1052,8 +1122,10 @@ class StatusTab(QWidget):
                 "https://github.com/glowseeker/warframe-api-helper there first."
             )
             return
+        # Source-build tooling — genuinely Linux/bash-only (git, a Rust
+        # toolchain, build.sh), unlike the rest of _run_command's steps.
         self._run_command(
-            f"git pull && ./build.sh && cp warframe-api-helper {WFINFO_DIR}/",
+            [["/bin/bash", "-c", f"git pull && ./build.sh && cp warframe-api-helper {WFINFO_DIR}/"]],
             cwd=HELPER_SRC, description="Rebuild helper",
         )
 
