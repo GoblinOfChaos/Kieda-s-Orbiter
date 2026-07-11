@@ -6,6 +6,9 @@ on:
       - 'v*'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-linux:
     runs-on: ubuntu-latest
@@ -98,13 +101,16 @@ jobs:
         run: |
           # Get the tag name from the current commit
           TAG="${{ github.ref_name }}"
-          
-          # Create release (may already exist if tag was pushed manually)
-          gh release create "$TAG" \
-            --title "Kieda's Orbiter $TAG" \
-            --notes-file .github/release-notes.md \
-            --verify-tag \
-            2>/dev/null || echo "Release may already exist, uploading assets..."
+
+          # Create release if it doesn't already exist (e.g. tag was pushed manually first)
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release already exists, uploading assets..."
+          else
+            gh release create "$TAG" \
+              --title "Kieda's Orbiter $TAG" \
+              --notes-file .github/release-notes.md \
+              --verify-tag
+          fi
 
           # Upload the binaries as release assets
           gh release upload "$TAG" \
