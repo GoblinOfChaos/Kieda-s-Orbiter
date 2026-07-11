@@ -382,7 +382,15 @@ class StatusTab(QWidget):
             brw = self._action_btn("Browse")
             brw.setMaximumWidth(75)
             def _browse(title=browse_title, filt=browse_filter, e=edit):
-                path, _ = QFileDialog.getOpenFileName(self, title, str(Path.home()), filt)
+                # DontUseNativeDialog: native dialogs route through
+                # xdg-desktop-portal, which is often missing/misconfigured
+                # on minimal or fresh Linux installs (VMs especially) and
+                # fails silently instead of showing an error. Qt's own
+                # built-in dialog works everywhere without that dependency.
+                path, _ = QFileDialog.getOpenFileName(
+                    self, title, str(Path.home()), filt,
+                    options=QFileDialog.Option.DontUseNativeDialog,
+                )
                 if path: e.setText(path)
             brw.clicked.connect(_browse)
             status_lbl = QLabel("")
