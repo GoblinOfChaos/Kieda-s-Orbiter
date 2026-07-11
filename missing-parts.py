@@ -141,10 +141,29 @@ class Tracker(QWidget):
         from PySide6.QtCore import QSettings
         self._settings = QSettings("kiedas-orbiter", "MainWindow")
         saved = self._settings.value("geometry")
-        if saved:
-            self.restoreGeometry(saved)
-        else:
-            self.resize(1400, 900)
+        restored_ok = bool(saved) and self.restoreGeometry(saved)
+        if restored_ok:
+            # Saved geometry can come from a completely different screen
+            # (different machine/resolution) — if it no longer fits any
+            # available screen, fall back to a sane default instead of
+            # leaving the window mis-sized or partially off-screen.
+            screen = self.screen() or QApplication.primaryScreen()
+            avail = screen.availableGeometry()
+            frame = self.frameGeometry()
+            fits = avail.intersected(frame).width() >= frame.width() * 0.5 and \
+                   avail.intersected(frame).height() >= frame.height() * 0.5
+            if not fits:
+                restored_ok = False
+        if not restored_ok:
+            screen = QApplication.primaryScreen()
+            avail = screen.availableGeometry() if screen else None
+            width, height = 1400, 900
+            if avail:
+                width = min(width, avail.width())
+                height = min(height, avail.height())
+            self.resize(width, height)
+            if avail:
+                self.move(avail.center().x() - width // 2, avail.center().y() - height // 2)
 
         try:
             self.items_data = json.loads(ITEMS_FILE.read_text())
