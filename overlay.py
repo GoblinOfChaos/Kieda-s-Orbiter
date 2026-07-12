@@ -44,6 +44,70 @@ def _running_under_gamescope() -> bool:
     return bool(os.environ.get("GAMESCOPE_WAYLAND_DISPLAY"))
 
 
+def _apply_x11_stacking_hints(win_id: int):
+    """Best-effort: ask the X server directly for EWMH hints that keep this
+    window above a fullscreen game and visible on whatever desktop it's on.
+    Qt's WindowStaysOnTopHint alone isn't reliably honored by KWin (Bazzite's
+    default WM) once a fullscreen app like Warframe has focus — the
+    reference Cephalon Kronos project hit the exact same issue and needed
+    this same kind of direct X11 property manipulation, not just window
+    flags, to fix it.
+
+    Opens its own short-lived Xlib connection independent of Qt's own XCB
+    one — window IDs are global X server resources, not tied to a specific
+    client connection, so this is safe to do alongside Qt. Fails silently
+    on Wayland-native sessions, missing libX11, gamescope, etc."""
+    try:
+        import ctypes
+        xlib = ctypes.CDLL("libX11.so.6")
+        xlib.XOpenDisplay.restype = ctypes.c_void_p
+        display = xlib.XOpenDisplay(None)
+        if not display:
+            return
+        try:
+            def atom(name):
+                return xlib.XInternAtom(ctypes.c_void_p(display), name.encode(), False)
+
+            net_wm_state = atom("_NET_WM_STATE")
+            state_above = atom("_NET_WM_STATE_ABOVE")
+            net_wm_desktop = atom("_NET_WM_DESKTOP")
+            net_wm_user_time = atom("_NET_WM_USER_TIME")
+            cardinal = atom("CARDINAL")
+            atom_type = atom("ATOM")
+
+            PROP_MODE_REPLACE = 0
+            ALL_DESKTOPS = 0xFFFFFFFF
+
+            # _NET_WM_STATE_ABOVE: the actual EWMH "always on top" state —
+            # more reliably honored by KWin than Qt's own hint alone.
+            states = (ctypes.c_ulong * 1)(state_above)
+            xlib.XChangeProperty(
+                ctypes.c_void_p(display), ctypes.c_ulong(win_id), net_wm_state,
+                atom_type, 32, PROP_MODE_REPLACE,
+                ctypes.cast(states, ctypes.POINTER(ctypes.c_ubyte)), 1,
+            )
+
+            # _NET_WM_DESKTOP = all desktops: stay visible regardless of
+            # which workspace the fullscreen game window occupies.
+            desktop = (ctypes.c_ulong * 1)(ALL_DESKTOPS)
+            xlib.XChangeProperty(
+                ctypes.c_void_p(display), ctypes.c_ulong(win_id), net_wm_desktop,
+                cardinal, 32, PROP_MODE_REPLACE,
+                ctypes.cast(desktop, ctypes.POINTER(ctypes.c_ubyte)), 1,
+            )
+
+            # Delete (not zero) _NET_WM_USER_TIME: some WMs treat a zero
+            # value as "never focus this," which can affect stacking too.
+            # Cephalon Kronos found deleting it outright was the real fix.
+            xlib.XDeleteProperty(ctypes.c_void_p(display), ctypes.c_ulong(win_id), net_wm_user_time)
+
+            xlib.XSync(ctypes.c_void_p(display), False)
+        finally:
+            xlib.XCloseDisplay(ctypes.c_void_p(display))
+    except Exception as e:
+        log(f"X11 stacking hints skipped: {e}")
+
+
 _cfg = _load_config()
 DISPLAY_DURATION_MS = int(_cfg.get("display_duration_ms") or 30000)
 POLL_INTERVAL_MS = int(_cfg.get("poll_interval_ms") or 250)
@@ -150,6 +214,11 @@ class _DraggableOverlay(QWidget):
         self.setStyleSheet(f"background-color: {BG};")
         self.setCursor(Qt.SizeAllCursor)
         self._drag_offset = None
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        if sys.platform.startswith("linux"):
+            _apply_x11_stacking_hints(int(self.winId()))
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
