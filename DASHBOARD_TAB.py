@@ -39,6 +39,60 @@ API_URL = "https://api.warframestat.us/pc?language=en"
 REFRESH_INTERVAL_MS = 60_000   # 1 minute
 CACHE_FILE = DATA_DIR / "worldstate_cache.json"
 
+# api.warframestat.us doesn't expose Descendia (the Tau/Zariman roguelite
+# mode) yet, so it needs its own fetch from the raw worldstate mirror that
+# Cephalon Kronos also relies on for this same data.
+DESCENDIA_API_URL = "https://oracle.browse.wf/worldState.json"
+DESCENDIA_CACHE_FILE = DATA_DIR / "descendia_cache.json"
+
+# Fallback display names for Descendia stage types/modifiers when the raw
+# worldstate only gives internal codenames. Verified against Cephalon
+# Kronos's DESCENDIA_MISSION_TYPES/DESCENDIA_PENANCES tables.
+DESCENDIA_MISSION_TYPES = {
+    "DT_BREAK_TARGETS": "Destroy Hologlobes",
+    "DT_LOOT_CREATURES": "Gruzzling Plunder",
+    "DT_ALCHEMY": "Alchemy",
+    "DT_INTERCEPTION": "Mobile Interception",
+    "DT_INFESTED_SALVAGE": "Infested Salvage",
+    "DT_SABOTAGE_HIVE": "Hive",
+    "DT_PROTOFRAME": "Protoframe Room",
+    "DT_CAPTURE": "Capture",
+    "DT_MIMICS": "Plunder Roulette",
+    "DT_COLLECTION": "Void Flood",
+    "DT_BOSS": "Assassination",
+    "DT_EXTERMINATE": "Exterminate",
+    "DT_NETRACELLS": "Targeted Elimination",
+    "DT_SABOTAGE_DEFENSE": "Defense",
+    "DT_DEFENSE": "Defense of a Protoframe",
+    "DT_EXCAVATION": "Excavation",
+    "DT_PRESURE_GAUGE": "Volatile",
+    "DT_UNIQUE": "Unique",
+    "DT_LOOT": "Loot",
+    "DT_RACE": "Race",
+}
+
+DESCENDIA_PENANCES = {
+    "NC_SlipAndSlide": "Frictionless without Enemies",
+    "BasicLootCreatures": "Gruzzling Plunder",
+    "MineField": "Minefield",
+    "SlipAndSlide": "Frictionless",
+    "Escapist": "Sneaky Retreats",
+    "VoidAberration": "Vampyric Liminus",
+    "Wisp": "Marie",
+    "FireAndIce": "Eximus Cabal: Fire & Ice",
+    "BasicMimics": "Plunder Roulette",
+    "NC_MineField": "Minefield without Enemies",
+    "Octopede": "The Fragmented Boss",
+    "PoisonGas": "Chemical Warfare",
+    "GlassMaker": "Glassmaker Cephalites",
+    "Harrow": "Lyon",
+    "Darkness": "Sol Banished",
+    "SpicyKnife": "Bomb Defusal",
+    "JumpSmash": "Head Stompers",
+    "Manics": "Manic Mania",
+    "FireChain": "Fire Chain",
+}
+
 # Tier colors
 TIER_COLORS = {
     "Lith":    "#8fd3ff",
@@ -220,26 +274,48 @@ class _Fetcher(QObject):
     data_ready = Signal(dict)
     error = Signal(str)
 
+    def __init__(self, url=API_URL, cache_file=CACHE_FILE, parent=None):
+        super().__init__(parent)
+        self._url = url
+        self._cache_file = cache_file
+
     def fetch(self):
         def _run():
             try:
                 req = urllib.request.Request(
-                    API_URL, headers={"User-Agent": "kiedas-orbiter/1.0"}
+                    self._url, headers={"User-Agent": "kiedas-orbiter/1.0"}
                 )
                 with urllib.request.urlopen(req, timeout=15) as r:
                     raw = r.read()
                 data = json.loads(raw)
-                CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
-                CACHE_FILE.write_bytes(raw)
+                self._cache_file.parent.mkdir(parents=True, exist_ok=True)
+                self._cache_file.write_bytes(raw)
                 self.data_ready.emit(data)
             except Exception as e:
                 # Try cache
                 try:
-                    data = json.loads(CACHE_FILE.read_text())
+                    data = json.loads(self._cache_file.read_text())
                     self.data_ready.emit(data)
                 except Exception:
                     self.error.emit(str(e))
         threading.Thread(target=_run, daemon=True).start()
+
+
+def _mongo_date_to_iso(field) -> str | None:
+    """Convert a MongoDB extended-JSON date field ({"$date": {"$numberLong":
+    "..."}} or {"$date": "..."}) to an ISO string _expiry_str understands."""
+    if not isinstance(field, dict):
+        return None
+    d = field.get("$date")
+    if isinstance(d, dict) and "$numberLong" in d:
+        try:
+            ms = int(d["$numberLong"])
+            return datetime.fromtimestamp(ms / 1000, tz=timezone.utc).isoformat()
+        except Exception:
+            return None
+    if isinstance(d, str):
+        return d
+    return None
 
 
 def _expiry_str(expiry_iso: str | None) -> str:
@@ -269,9 +345,13 @@ class DashboardTab(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._data = None
+        self._descendia_data = None
         self._fetcher = _Fetcher()
         self._fetcher.data_ready.connect(self._on_data)
         self._fetcher.error.connect(self._on_error)
+        self._descendia_fetcher = _Fetcher(url=DESCENDIA_API_URL, cache_file=DESCENDIA_CACHE_FILE)
+        self._descendia_fetcher.data_ready.connect(self._on_descendia_data)
+        self._descendia_fetcher.error.connect(lambda *_: None)  # optional section — fail silently
         self._setup_ui()
 
         # Auto-refresh timer
@@ -366,6 +446,7 @@ class DashboardTab(QWidget):
     def _refresh(self):
         self._last_updated_lbl.setText("Refreshing...")
         self._fetcher.fetch()
+        self._descendia_fetcher.fetch()
 
     def _on_error(self, msg):
         self._last_updated_lbl.setText(f"Error: {msg[:50]}")
@@ -375,6 +456,11 @@ class DashboardTab(QWidget):
         now = datetime.now().strftime("%H:%M:%S")
         self._last_updated_lbl.setText(f"Updated {now}")
         self._rebuild()
+
+    def _on_descendia_data(self, data):
+        self._descendia_data = data
+        if self._data is not None:
+            self._rebuild()
 
     def _clear(self):
         self._loading_lbl = None  # will be gone after deleteLater
@@ -410,6 +496,9 @@ class DashboardTab(QWidget):
         col1.addWidget(self._build_arbitration(d))
         col1.addWidget(self._build_baro(d))
         col1.addWidget(self._build_steel_path(d))
+        descendia_card = self._build_descendia()
+        if descendia_card is not None:
+            col1.addWidget(descendia_card)
         col1.addStretch()
 
         col0_w = QWidget(); col0_w.setLayout(col0)
@@ -830,6 +919,88 @@ class DashboardTab(QWidget):
 
         if not challenges:
             body_layout.addWidget(_label("No active challenges", DIM, 13))
+
+        layout.addWidget(body)
+        return frame
+
+    def _build_descendia(self):
+        """Descendia (the Tau/Zariman roguelite 'Descent' mode) isn't in
+        api.warframestat.us yet, so this reads from self._descendia_data
+        (fetched separately from oracle.browse.wf/worldState.json) instead
+        of the main dashboard payload. Returns None if that data hasn't
+        loaded yet, so the caller can skip adding this card entirely."""
+        wd = self._descendia_data
+        if not wd:
+            return None
+        descents = wd.get("Descents", [])
+        if not descents:
+            return None
+
+        now = datetime.now(timezone.utc)
+        current = None
+        for desc in descents:
+            activation = _mongo_date_to_iso(desc.get("Activation"))
+            expiry = _mongo_date_to_iso(desc.get("Expiry"))
+            try:
+                if activation and expiry:
+                    a = datetime.fromisoformat(activation)
+                    e = datetime.fromisoformat(expiry)
+                    if a <= now <= e:
+                        current = desc
+                        break
+            except Exception:
+                continue
+        if current is None:
+            current = descents[-1]
+
+        frame = QFrame()
+        frame.setStyleSheet(_card_style())
+        layout = QVBoxLayout(frame)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        layout.addWidget(_section_title("◈  DESCENDIA", "#c084fc"))
+
+        body = QWidget()
+        body.setStyleSheet("background: transparent;")
+        body_layout = QVBoxLayout(body)
+        body_layout.setContentsMargins(12, 8, 12, 10)
+        body_layout.setSpacing(2)
+
+        eta = _expiry_str(_mongo_date_to_iso(current.get("Expiry")))
+        header_row = QHBoxLayout()
+        header_row.addWidget(_label("This week's Descent", FG, 13, bold=True))
+        header_row.addStretch()
+        header_row.addWidget(_label(f"Resets {eta}" if eta else "", DIM, 12))
+        body_layout.addLayout(header_row)
+        body_layout.addWidget(_row_divider())
+
+        stages = sorted(current.get("Challenges", []), key=lambda c: c.get("Index", 0))
+        for stage in stages:
+            index = stage.get("Index", 0)
+            raw_type = stage.get("Type", "")
+            raw_penance = stage.get("Challenge", "")
+            mission_type = DESCENDIA_MISSION_TYPES.get(raw_type, raw_type)
+            penance = DESCENDIA_PENANCES.get(raw_penance, raw_penance)
+            is_checkpoint = index in (7, 14, 21)
+            is_boss = index == 21
+
+            row = QHBoxLayout()
+            row.setContentsMargins(0, 2, 0, 2)
+            row.setSpacing(8)
+            marker_color = "#ff8fa3" if is_boss else (GOLD if is_checkpoint else DIM)
+            marker = _label(f"{index:>2}", marker_color, 11, bold=is_checkpoint)
+            marker.setFixedWidth(20)
+            row.addWidget(marker)
+            label_color = FG if is_checkpoint else DIM
+            text = f"{mission_type} — {penance}" if penance else mission_type
+            info_lbl = _label(text, label_color, 12, bold=is_boss)
+            info_lbl.setWordWrap(False)
+            row.addWidget(info_lbl, stretch=1)
+            if is_boss:
+                row.addWidget(_label("BOSS", "#ff8fa3", 10, bold=True))
+            elif is_checkpoint:
+                row.addWidget(_label("checkpoint", GOLD, 10))
+            body_layout.addLayout(row)
 
         layout.addWidget(body)
         return frame

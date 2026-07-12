@@ -26,12 +26,12 @@ The app is fully usable with Warframe closed for browsing/planning — only **Re
 
 A live "what's happening in Warframe right now" screen. Pulls public game-state data from the internet every 60 seconds — **works even with Warframe closed**, since it's not reading anything from your game.
 
-Shows: day/night **Cycles** for Earth, Cetus, Orb Vallis, Cambion Drift, and Duviri; **Void Fissures** grouped by relic era with mission/node/time-left (Steel Path and Void Storm fissures are marked); **Sortie** and **Archon Hunt** with their timers and mission variants; **Arbitration**; whether **Baro Ki'Teer** is here (with his stock and prices) or his ETA if not; the current **Steel Path** weekly reward; and active **Nightwave** challenges.
+Shows: day/night **Cycles** for Earth, Cetus, Orb Vallis, Cambion Drift, and Duviri; **Void Fissures** grouped by relic era with mission/node/time-left (Steel Path and Void Storm fissures are marked); **Sortie** and **Archon Hunt** with their timers and mission variants; **Arbitration**; whether **Baro Ki'Teer** is here (with his stock and prices) or his ETA if not; the current **Steel Path** weekly reward; active **Nightwave** challenges; and this week's **Descendia** run (all 21 stages, with checkpoints at 7/14 and the boss at 21 marked).
 
 - The **↻ button** (top-right) forces an immediate refresh instead of waiting for the 60-second timer.
 - Everything else is read-only.
 
-**Note:** Nightwave's "completed" checkmarks reflect the public API's own tracking, not necessarily your personal progress. If the internet fetch fails, the Dashboard falls back to the last successful copy and shows an error at the top rather than going blank.
+**Note:** Nightwave's "completed" checkmarks reflect the public API's own tracking, not necessarily your personal progress. If the internet fetch fails, the Dashboard falls back to the last successful copy and shows an error at the top rather than going blank. Descendia pulls from a separate public data source than the rest of the Dashboard (the main API doesn't cover it yet) — if that source is briefly unavailable, the Descendia card just doesn't show rather than breaking the rest of the page.
 
 ---
 
