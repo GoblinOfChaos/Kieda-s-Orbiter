@@ -44,9 +44,13 @@ def load_valid_slugs():
             pass
     print("Fetching market item catalog from warframe.market...")
     try:
-        data = get_json("https://api.warframe.market/v1/items")
-        items = data.get("payload", {}).get("items", [])
-        slugs = set(item["url_name"] for item in items if "url_name" in item)
+        # v1/items was retired (404) - v2 has a different response shape:
+        # {"data": [{"slug": ..., ...}]} instead of {"payload": {"items": [...]}}
+        # with "url_name". The per-item statistics endpoint (fetch_price)
+        # is still on v1 and works fine, so only this catalog fetch moved.
+        data = get_json("https://api.warframe.market/v2/items")
+        items = data.get("data", [])
+        slugs = set(item["slug"] for item in items if "slug" in item)
         print(f"Fetched {len(slugs)} valid slugs")
         with open(SLUGS_CACHE, "w") as f:
             json.dump({"timestamp": time.time(), "slugs": list(slugs)}, f)
