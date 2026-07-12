@@ -259,7 +259,8 @@ The control center: live status, data-refresh actions, overlay settings, file pa
 - **Last detection** — the last relic reward the OCR actually read, or "(none yet)"
 
 **Actions:**
-- **Refresh Data** — the main sync button. Reads your live inventory from Warframe (via `warframe-api-helper`) and rebuilds everything derived from it (Missing Parts, Set Progress, Equipment, stats snapshot). **Requires Warframe to be running** — you'll get a warning dialog if it's not. Every other open tab reloads automatically when this finishes, no restart needed
+- **Refresh Data** — the main sync button. Reads your live inventory from Warframe (via `warframe-api-helper`) and rebuilds everything derived from it (Missing Parts, Set Progress, Equipment, stats snapshot). **Requires Warframe to be running** — you'll get a warning dialog if it's not. Every other open tab reloads automatically when this finishes, no restart needed.
+  **Performance note:** `warframe-api-helper` caches your auth token after the first successful read, so most refreshes are a fast, stutter-free network call. But if that cached token has expired (or this is your first refresh), it has to fall back to scanning the game's live memory to find a fresh one — this can cause a brief in-game stutter, typically a couple seconds. It's a one-time cost per token, not something that happens every refresh.
 - **Update Game Data** — refreshes item prices and the item list from the public Warframe API. Safe to run anytime
 - **Refresh WFCD Cache** — force-downloads a fresh (~40MB) item database from WFCD's GitHub. Rarely needed by itself
 - **Fetch Live Prices** — pulls real platinum prices from warframe.market. Takes a few minutes (rate-limited)
