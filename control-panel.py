@@ -414,17 +414,13 @@ class ControlPanel(QWidget):
 
     def refresh_inventory(self):
         # warframe-api-helper reads inventory directly from Warframe's own
-        # memory/API — no third-party app needed. It requires a cached auth
-        # token (from a prior successful run) or a live memory scan, which
-        # needs Warframe actually running.
-        if not pgrep("Warframe.x64.exe"):
-            QMessageBox.warning(
-                self, "Warframe isn't running",
-                "warframe-api-helper needs Warframe running to read your "
-                "inventory. Launch Warframe first, then try again."
-            )
-            return
-
+        # memory/API — no third-party app needed. It tries a cached auth
+        # token first and only needs Warframe actually running if that
+        # token no longer works, so we don't gate the button on Warframe
+        # being detected — that would block the legitimate cached-token
+        # path. The helper prints its own clear message ("Process not
+        # found.") in the command output if a live scan turns out to be
+        # necessary and Warframe isn't open.
         from download_helper import API_HELPER_OUTPUT_PATH
         helper = API_HELPER_OUTPUT_PATH.get(sys.platform, WFINFO_DIR / "warframe-api-helper")
         if not helper.exists():
