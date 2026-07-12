@@ -25,7 +25,7 @@ from PySide6.QtWidgets import (
 )
 from paths import DATA_DIR, WFINFO_DIR
 
-WFINFO_ICON = str(WFINFO_DIR / "orbiter.svg")
+WFINFO_ICON = str(WFINFO_DIR / ("orbiter.ico" if sys.platform == "win32" else "orbiter.svg"))
 
 HOME = Path.home()
 HELPER_SRC = HOME / "helper-src"

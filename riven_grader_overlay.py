@@ -36,7 +36,7 @@ def _running_under_gamescope() -> bool:
 STATE_FILE = DATA_DIR / "riven-graded.json"
 PREV_STATE_FILE = DATA_DIR / "riven-graded-prev.json"
 POSITION_FILE = DATA_DIR / "riven-overlay-position.json"
-WFINFO_ICON = str(WFINFO_DIR / "orbiter.svg")
+WFINFO_ICON = str(WFINFO_DIR / ("orbiter.ico" if sys.platform == "win32" else "orbiter.svg"))
 
 POLL_INTERVAL_MS = 1000
 AUTO_HIDE_MS = 120_000   # hide 2 min after last update if not rerolling

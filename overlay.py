@@ -15,7 +15,10 @@ from PySide6.QtWidgets import (
 )
 from paths import DATA_DIR, WFINFO_DIR
 
-WFINFO_ICON = str(WFINFO_DIR / "orbiter.svg")
+# .ico is natively supported for Windows taskbar/title-bar icons (HICON);
+# .svg needs the QtSvg plugin to render and can silently fall back to no
+# icon at all if that's missing, which is what was happening here.
+WFINFO_ICON = str(WFINFO_DIR / ("orbiter.ico" if sys.platform == "win32" else "orbiter.svg"))
 
 STATE_FILE = DATA_DIR / "latest-detection.json"
 POSITION_FILE = DATA_DIR / "overlay-position.json"
