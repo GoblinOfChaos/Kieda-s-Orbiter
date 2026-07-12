@@ -27,12 +27,15 @@ IS_MAC     = sys.platform == "darwin"
 # ── Python executable inside venv ────────────────────────────────────────
 if IS_WINDOWS:
     PYTHON = VENV / "Scripts" / "python.exe"
+    PYTHONW = VENV / "Scripts" / "pythonw.exe"
 else:
     PYTHON = VENV / "bin" / "python"
+    PYTHONW = PYTHON
 
 if not PYTHON.exists():
     # Fallback: use current interpreter (useful during initial setup)
     PYTHON = Path(sys.executable)
+    PYTHONW = PYTHON
 
 # ── Rust detector binary ──────────────────────────────────────────────────
 if IS_WINDOWS:
@@ -122,16 +125,33 @@ def _build_env() -> dict:
     return env
 
 
+def _exec_or_spawn(argv, env):
+    """Replace this process with argv (Linux/Mac: true exec, no extra
+    process). On Windows, os.execve isn't a real in-place replace — Python
+    emulates it by spawning a brand-new child process, and if that child is
+    a console-subsystem exe (python.exe, orbiter.exe) launched with no
+    inherited console, Windows auto-allocates a fresh blank one for it that
+    then sticks around for the whole run. CREATE_NO_WINDOW is the only way
+    to actually suppress that, so on Windows we spawn explicitly with that
+    flag and exit, instead of relying on execve."""
+    if IS_WINDOWS:
+        CREATE_NO_WINDOW = 0x08000000
+        subprocess.Popen(argv, env=env, creationflags=CREATE_NO_WINDOW)
+        sys.exit(0)
+    else:
+        os.execve(str(argv[0]), [str(a) for a in argv], env)
+
+
 def launch_app():
     """Launch the main GUI application."""
     env = _build_env()
-    os.execve(str(PYTHON), [str(PYTHON), str(WFINFO_DIR / "missing-parts.py")], env)
+    _exec_or_spawn([PYTHONW, WFINFO_DIR / "missing-parts.py"], env)
 
 
 def launch_overlay():
     """Launch the relic reward overlay."""
     env = _build_env()
-    os.execve(str(PYTHON), [str(PYTHON), str(WFINFO_DIR / "overlay.py")], env)
+    _exec_or_spawn([PYTHONW, WFINFO_DIR / "overlay.py"], env)
 
 
 def launch_detector(extra_args: list = None):
@@ -142,14 +162,13 @@ def launch_detector(extra_args: list = None):
         sys.exit(1)
 
     env = _build_env()
-    cmd = [str(DETECTOR)] + (extra_args or [])
-    os.execve(str(DETECTOR), cmd, env)
+    _exec_or_spawn([DETECTOR] + (extra_args or []), env)
 
 
 def launch_watcher():
     """Launch the warframe-watcher process manager."""
     env = _build_env()
-    os.execve(str(PYTHON), [str(PYTHON), str(WFINFO_DIR / "warframe-watcher.py")], env)
+    _exec_or_spawn([PYTHONW, WFINFO_DIR / "warframe-watcher.py"], env)
 
 
 # ── Entry point ───────────────────────────────────────────────────────────
