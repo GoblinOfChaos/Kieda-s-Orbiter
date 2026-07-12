@@ -641,12 +641,17 @@ class StatusTab(QWidget):
                         if tags:
                             latest = tags[0]["name"].lstrip("v")
 
+                    from update_check import _version_tuple
                     if not latest:
                         results.append("?  App:  could not determine latest version")
-                    elif latest == current:
-                        results.append(f"✓  App:  v{current}  (up to date)")
-                    else:
+                    elif _version_tuple(latest) > _version_tuple(current):
                         results.append(f"⬆  App:  v{current}  →  v{latest} available!\n   {base_url}")
+                    else:
+                        # Covers both "exactly equal" and "current is ahead
+                        # of the latest release" (e.g. a stale VERSION file
+                        # left over from an abandoned version bump) - either
+                        # way, there's nothing to update to.
+                        results.append(f"✓  App:  v{current}  (up to date)")
                 except Exception as e:
                     results.append(f"?  App:  could not check ({e})")
 
