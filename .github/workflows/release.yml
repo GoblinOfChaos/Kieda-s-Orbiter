@@ -71,6 +71,15 @@ jobs:
           # only helps this CI job itself, not anyone who later downloads
           # the exe. Ship the DLLs alongside it so it actually runs.
           Copy-Item "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows\bin\*.dll" target/release/
+
+          # Tesseract/Leptonica are C++ libraries vcpkg built against the
+          # dynamic MSVC runtime, so they need msvcp140.dll/vcruntime140*.dll
+          # too — present on this CI runner (VS Build Tools install them
+          # system-wide) but not on a bare end-user Windows machine.
+          Copy-Item "C:\Windows\System32\msvcp140.dll" target/release/
+          Copy-Item "C:\Windows\System32\vcruntime140.dll" target/release/
+          Copy-Item "C:\Windows\System32\vcruntime140_1.dll" target/release/
+
           Compress-Archive -Path target/release/orbiter.exe, target/release/*.dll -DestinationPath target/release/orbiter-windows-x86_64.zip
 
       - name: Upload Windows artifact
