@@ -314,6 +314,8 @@ class Tracker(QWidget):
         _add_section("Collectibles")
         _add_page("Ayatan Sculptures", lambda: __import__('AYATAN_TAB',           fromlist=['AyatanTab']).AyatanTab(),                     "◉")
         _add_page("Conservation Tags", lambda: __import__('CONSERVATION_TAG_TAB', fromlist=['ConservationTagTab']).ConservationTagTab(),   "▲")
+        _add_page("Emblems",           lambda: __import__('EMBLEM_TAB',           fromlist=['EmblemTab']).EmblemTab(),                     "⬟")
+        _add_page("Ephemera",          lambda: __import__('EPHEMERA_TAB',         fromlist=['EphemeraTab']).EphemeraTab(),                 "✺")
 
         # ── Relics section ─────────────────────────────────────────────────
         _add_section("Relics")
