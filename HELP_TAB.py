@@ -84,6 +84,7 @@ Every mod in the game, cross-referenced with what you own, including where to fa
 - **Weapon/Type dropdown** — once a Slot is picked, narrows further to a specific weapon type (Rifle, Shotgun, Sniper...) or a single weapon's exclusive mods (e.g. "Soma Prime"). Options update to match the selected Slot.
 - **Hide owned mods** — only show mods you own zero of.
 - Columns are sortable.
+- Real mod card art shows next to each name once you've run **Update Game Data** — images download once and cache forever, so this fills in gradually the first time and is instant after that.
 
 ### Mastery Helper
 
@@ -205,6 +206,15 @@ Every arcane in the game (Warframe, Melee, Primary, Secondary, Operator, Amp, Za
 
 - **Search box**, **Type dropdown**, **Hide owned arcanes** checkbox.
 - Owned counts are highlighted; columns are sortable.
+
+### Modular Weapons
+
+Tracks the mastery-granting part of each modular weapon/vehicle/pet — Zaw Strikes, Kitgun Chambers, Amp Prisms, MOA Heads, Hound Heads, and K-Drive Decks — plus your Railjack Intrinsics. Modular gear doesn't appear in your inventory as a single trackable item the way normal weapons do, so ownership here follows the one part of each build that actually carries mastery XP.
+
+- **Category dropdown** — switch between the six modular part types and Railjack Intrinsics.
+- **Search box**, **Hide owned** checkbox.
+- **Rank** and **Affinity** columns show real progress toward that part's max rank (reuses the same affinity formula as Mastery Helper).
+- Railjack Intrinsics always shows all five skill trees since you don't "own" or "miss" them, just level them.
 
 ### Warframe / Primary / Secondary / Melee / Archwing / Necramech / Sentinel / Sentinel Weapon / Pet
 

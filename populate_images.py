@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-populate_images.py - Download item images from WFCD CDN for the equipment tabs.
-Run after populate_equipment.py. Uses 10 parallel downloads. Caches forever.
+populate_images.py - Download item images from WFCD CDN for the equipment
+tabs and mod cards. Run after populate_equipment.py. Uses 10 parallel
+downloads. Caches forever.
 """
 import json, sys
 from pathlib import Path
@@ -10,6 +11,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from paths import DATA_DIR, CACHE_DIR
 
 EQUIPMENT_FILE = DATA_DIR / "equipment_status.json"
+WFCD_CACHE_FILE = Path(__file__).parent / "wfcd_all_cache.json"
 CACHE_DIR      = CACHE_DIR / "item_images"
 CDN_URL        = "https://cdn.warframestat.us/img"
 
@@ -41,6 +43,13 @@ def main():
     for tab, items in data.items():
         for item in items:
             if (n := item.get("imageName")):
+                names.add(n)
+
+    if WFCD_CACHE_FILE.exists():
+        wfcd = json.loads(WFCD_CACHE_FILE.read_text())
+        wfcd_items = wfcd if isinstance(wfcd, list) else (wfcd.get("items") or wfcd.get("data") or [])
+        for item in wfcd_items:
+            if isinstance(item, dict) and item.get("category") == "Mods" and (n := item.get("imageName")):
                 names.add(n)
 
     print(f"Total unique item images: {len(names)}")

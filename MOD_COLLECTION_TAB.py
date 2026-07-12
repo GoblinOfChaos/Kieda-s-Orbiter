@@ -5,11 +5,15 @@ import re
 from pathlib import Path
 
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QCheckBox,
     QTableWidget, QTableWidgetItem, QHeaderView, QComboBox
 )
 from column_persistence import apply_saved_widths, remember_widths
+from paths import CACHE_DIR
+
+IMAGE_CACHE_DIR = CACHE_DIR / "item_images"
 
 POLARITY_NAMES = {
     'AP_ATTACK': 'Madurai',
@@ -88,7 +92,7 @@ class ModCollectionTab(QWidget):
         ])
         for col in range(7):
             self._table.horizontalHeader().setSectionResizeMode(col, QHeaderView.Interactive)
-        apply_saved_widths(self._table, "mod_collection_table", [180, 110, 70, 80, 140, 320, 60])
+        apply_saved_widths(self._table, "mod_collection_table", [210, 110, 70, 80, 140, 320, 60])
         remember_widths(self._table, "mod_collection_table")
         self._table.setSortingEnabled(True)
         self._table.verticalHeader().setVisible(False)
@@ -106,7 +110,7 @@ class ModCollectionTab(QWidget):
             for u in inventory.get('RawUpgrades', [])
             if isinstance(u, dict) and u.get('ItemType')
         }
-        wfcd_names, wfcd_drops = self._load_wfcd_data(base / 'wfcd_all_cache.json')
+        wfcd_names, wfcd_drops, wfcd_images = self._load_wfcd_data(base / 'wfcd_all_cache.json')
         upgrades = self._load_json(base / 'ExportUpgrades.json') or {}
         mod_sets = self._load_json(base / 'ExportModSet.json') or {}
 
@@ -138,6 +142,7 @@ class ModCollectionTab(QWidget):
                 'drop_location': drop_location,
                 'owned': owned_count,
                 'is_set': bool(set_name),
+                'image_name': wfcd_images.get(unique, ''),
             })
 
         self._populate_type_combo()
@@ -186,7 +191,7 @@ class ModCollectionTab(QWidget):
             with path.open() as fh:
                 data = json.load(fh)
         except Exception:
-            return {}, {}
+            return {}, {}, {}
 
         items = []
         if isinstance(data, list):
@@ -195,6 +200,7 @@ class ModCollectionTab(QWidget):
             items = data.get('items') or data.get('data') or []
         names = {}
         drops = {}
+        images = {}
         for item in items:
             if not isinstance(item, dict):
                 continue
@@ -206,7 +212,9 @@ class ModCollectionTab(QWidget):
                 locations = sorted({d.get('location') for d in item['drops'] if d.get('location')})
                 if locations:
                     drops[u] = '; '.join(locations)
-        return names, drops
+            if u and item.get('imageName'):
+                images[u] = item['imageName']
+        return names, drops, images
 
     def _build_set_names(self, keys):
         results = {}
@@ -235,7 +243,15 @@ class ModCollectionTab(QWidget):
         for mod in mods:
             r = self._table.rowCount()
             self._table.insertRow(r)
-            _a0 = QTableWidgetItem(mod['name']); _a0.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter); self._table.setItem(r, 0, _a0)
+            _a0 = QTableWidgetItem(mod['name']); _a0.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+            img_name = mod.get('image_name', '')
+            if img_name:
+                img_path = IMAGE_CACHE_DIR / img_name
+                if img_path.exists():
+                    pix = QPixmap(str(img_path))
+                    if not pix.isNull():
+                        _a0.setIcon(QIcon(pix.scaled(32, 32, Qt.KeepAspectRatio, Qt.SmoothTransformation)))
+            self._table.setItem(r, 0, _a0)
             _a1 = QTableWidgetItem(mod['type']); _a1.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter); self._table.setItem(r, 1, _a1)
             _a2 = QTableWidgetItem(mod['rarity']); _a2.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter); self._table.setItem(r, 2, _a2)
             _a3 = QTableWidgetItem(mod['polarity']); _a3.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter); self._table.setItem(r, 3, _a3)

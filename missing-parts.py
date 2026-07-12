@@ -336,6 +336,7 @@ class Tracker(QWidget):
         # Pre-load equipment data once, then build each tab individually on demand
         _add_section("Equipment")
         _add_page("Arcanes",          lambda: __import__('ARCANE_TAB', fromlist=['ArcaneTab']).ArcaneTab(), "◐")
+        _add_page("Modular Weapons",  lambda: __import__('MODULAR_TAB', fromlist=['ModularTab']).ModularTab(), "❖")
         _eq_icons = {
             "Warframe": "\u25a0", "Primary": "\u2299", "Secondary": "\u25cb",
             "Melee": "\u2020", "Archwing": "\u25b3", "Necramech": "\u25a3",
