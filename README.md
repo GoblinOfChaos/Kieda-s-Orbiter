@@ -157,6 +157,13 @@ Every mod in the game, cross-referenced with what you own, including where to fa
 - **Hide owned mods** — only show mods you own zero of
 - Columns are sortable
 
+#### Arcanes
+
+Every arcane in the game (Warframe, Melee, Primary, Secondary, Operator, Amp, Zaw, Kitgun, Bow, and Shotgun arcanes), with owned counts and drop locations.
+
+- **Search box**, **Type dropdown**, **Hide owned arcanes** checkbox
+- Owned counts are highlighted; columns are sortable
+
 #### Mastery Helper
 
 Helps you decide what to level up for Mastery Rank, split into three sub-tabs:
