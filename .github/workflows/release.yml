@@ -106,7 +106,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+        with:
+          # Default shallow fetch doesn't reliably include full annotated
+          # tag objects - without this, `git tag -l --format='%(contents)'`
+          # can silently fall back to the pointed-at commit's message
+          # instead of the tag's own annotation message.
+          fetch-depth: 0
+          fetch-tags: true
+
       - name: Download Linux binary
         uses: actions/download-artifact@v4
         with:
