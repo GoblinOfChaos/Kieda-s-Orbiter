@@ -130,6 +130,18 @@ All 98 cosmetic ephemera with owned status and drop locations.
 
 - **Search box**, **Hide owned ephemera** checkbox.
 
+### Captura Scenes
+
+All 201 backdrop scenes with owned counts.
+
+- **Search box**, **Hide owned scenes** checkbox.
+
+### Glyphs
+
+All 1668 profile/chat glyphs with owned status (Yes/No - these aren't stackable).
+
+- **Search box**, **Hide owned glyphs** checkbox.
+
 ---
 
 ## Relics
