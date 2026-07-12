@@ -157,13 +157,6 @@ Every mod in the game, cross-referenced with what you own, including where to fa
 - **Hide owned mods** — only show mods you own zero of
 - Columns are sortable
 
-#### Arcanes
-
-Every arcane in the game (Warframe, Melee, Primary, Secondary, Operator, Amp, Zaw, Kitgun, Bow, and Shotgun arcanes), with owned counts and drop locations.
-
-- **Search box**, **Type dropdown**, **Hide owned arcanes** checkbox
-- Owned counts are highlighted; columns are sortable
-
 #### Mastery Helper
 
 Helps you decide what to level up for Mastery Rank, split into three sub-tabs:
@@ -277,6 +270,15 @@ A timeline of your credits, plat, mastery rank, and prime-part progress over tim
 ---
 
 ### Equipment
+
+#### Arcanes
+
+Every arcane in the game (Warframe, Melee, Primary, Secondary, Operator, Amp, Zaw, Kitgun, Bow, and Shotgun arcanes), with owned counts and drop locations. Lives here rather than under Inventory since arcanes directly affect specific weapons/Warframes, same as the rest of this section.
+
+- **Search box**, **Type dropdown**, **Hide owned arcanes** checkbox
+- Owned counts are highlighted; columns are sortable
+
+#### Warframe / Primary / Secondary / Melee / Archwing / Necramech / Sentinel / Sentinel Weapon / Pet
 
 Nine near-identical tabs — **Warframe, Primary, Secondary, Melee, Archwing, Necramech, Sentinel, Sentinel Weapon, Pet** — each a tree of every item in that category, whether you've mastered it, and what you still need.
 
