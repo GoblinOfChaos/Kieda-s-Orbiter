@@ -399,7 +399,11 @@ class RivenGraderOverlay(QWidget):
 
     def showEvent(self, event):
         super().showEvent(event)
-        if sys.platform.startswith("linux"):
+        # winId() only returns a real X11 window ID when Qt is actually
+        # running through its xcb platform plugin - on pure Wayland it's a
+        # different kind of handle, and sending raw Xlib calls against it
+        # is undefined behavior, not just a no-op.
+        if QApplication.platformName() == "xcb":
             _apply_x11_stacking_hints(int(self.winId()))
 
     def mousePressEvent(self, event):

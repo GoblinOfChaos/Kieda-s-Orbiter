@@ -151,6 +151,16 @@ def launch_app():
 def launch_overlay():
     """Launch the relic reward overlay."""
     env = _build_env()
+    if IS_LINUX and env.get("DISPLAY"):
+        # Force XWayland (xcb) instead of the native wayland plugin, even
+        # though both are normally available. The overlay's "always stay
+        # above a fullscreen game" fix relies on X11 EWMH hints (see
+        # overlay.py's _apply_x11_stacking_hints) - those only work when
+        # Qt is actually an X11 client. Under the native wayland plugin,
+        # winId() isn't a real X11 window ID at all, so that fix silently
+        # can't apply. Only the overlay needs this override, not the main
+        # app window, since only the overlay has this always-on-top need.
+        env["QT_QPA_PLATFORM"] = "xcb"
     _exec_or_spawn([PYTHONW, WFINFO_DIR / "overlay.py"], env)
 
 
