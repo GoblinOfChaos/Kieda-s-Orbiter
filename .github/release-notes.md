@@ -11,6 +11,3 @@ This release includes binaries for both Linux and Windows platforms.
 - Architecture: x86_64
 - Notes: All dependencies bundled or gracefully handled
 - Installation: Run `Install Windows.bat` to install and configure
-
-### Changelog
-See GitHub releases for detailed changelog.

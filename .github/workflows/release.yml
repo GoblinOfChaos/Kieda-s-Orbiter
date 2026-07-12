@@ -132,13 +132,29 @@ jobs:
           # Get the tag name from the current commit
           TAG="${{ github.ref_name }}"
 
+          # Build release notes from the annotated tag message (what
+          # "git tag -a -m '...'" actually contains) instead of the old
+          # static .github/release-notes.md, which never changed between
+          # releases and just said "See GitHub releases for detailed
+          # changelog" - a placeholder pointing at itself. Falls back to
+          # a generic line if the tag has no annotation message.
+          TAG_BODY="$(git tag -l --format='%(contents)' "$TAG")"
+          if [ -z "$TAG_BODY" ]; then
+            TAG_BODY="Kieda's Orbiter $TAG"
+          fi
+          {
+            echo "$TAG_BODY"
+            echo
+            cat .github/release-notes.md
+          } > /tmp/release_notes.md
+
           # Create release if it doesn't already exist (e.g. tag was pushed manually first)
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "Release already exists, uploading assets..."
           else
             gh release create "$TAG" \
               --title "Kieda's Orbiter $TAG" \
-              --notes-file .github/release-notes.md \
+              --notes-file /tmp/release_notes.md \
               --verify-tag
           fi
 
