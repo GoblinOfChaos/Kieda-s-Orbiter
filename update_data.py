@@ -19,6 +19,15 @@ WFINFO_DIR = Path(__file__).parent
 SOURCES = [
     ("https://api.warframestat.us/wfinfo/prices/", WFINFO_DIR / "prices.json"),
     ("https://api.warframestat.us/wfinfo/filtered_items/", WFINFO_DIR / "filtered_items.json"),
+    # Mod Collection's data - previously only ever fetched once by
+    # install.py's one-shot quick_update() call, with no way to retry
+    # from the running app if that fetch failed or got interrupted. If
+    # it never landed, Mod Collection stays permanently empty with no
+    # visible error. Folded in here so "Update Game Data" can self-heal it.
+    ("https://raw.githubusercontent.com/calamity-inc/warframe-public-export-plus/senpai/ExportUpgrades.json",
+     WFINFO_DIR / "ExportUpgrades.json"),
+    ("https://raw.githubusercontent.com/calamity-inc/warframe-public-export-plus/senpai/ExportModSet.json",
+     WFINFO_DIR / "ExportModSet.json"),
 ]
 
 
