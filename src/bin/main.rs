@@ -232,7 +232,8 @@ fn run_detection(db: &Database, owned: &OwnedDb) {
         std::env::var("APPDATA")
             .map(PathBuf::from)
             .unwrap_or_else(|_| {
-                PathBuf::from(std::env::var("USERPROFILE").unwrap_or_default()).join("AppData/Roaming")
+                PathBuf::from(std::env::var("USERPROFILE").unwrap_or_default())
+                    .join("AppData/Roaming")
             })
     } else {
         std::env::var("XDG_DATA_HOME")
