@@ -23,7 +23,7 @@ from PySide6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
     QPushButton, QLabel, QGroupBox, QFormLayout, QTextEdit, QMessageBox,
 )
-from paths import DATA_DIR, WFINFO_DIR, get_ee_log_path, get_inventory_path
+from paths import DATA_DIR, WFINFO_DIR, get_ee_log_path, get_inventory_path, get_screenshot_hotkey
 
 WFINFO_ICON = str(WFINFO_DIR / ("orbiter.ico" if sys.platform == "win32" else "orbiter.svg"))
 
@@ -441,15 +441,20 @@ class ControlPanel(QWidget):
         # own with a narrower, less accurate fallback.
         ee_path = get_ee_log_path()
         log_path_arg = [str(ee_path)] if ee_path is not None else []
+        # Some other software (Steam, GeForce Experience, Xbox Game Bar, VM
+        # guest tools, etc.) can claim F12 as a global hotkey first, which
+        # prevents orbiter from registering it at all - configurable via
+        # config.json's screenshot_hotkey instead of needing a code change.
+        hotkey_args = ["--hotkey", get_screenshot_hotkey()]
         try:
             if IS_LINUX:
                 # launch-orbiter.sh handles Bazzite/gamescope-specific setup
                 # (DISPLAY detection, host libs, portal bus) that Windows
                 # simply doesn't need — there we can launch the exe directly.
-                launch_detached(["./launch-orbiter.sh"] + log_path_arg, cwd=WFINFO_DIR,
+                launch_detached(["./launch-orbiter.sh"] + log_path_arg + hotkey_args, cwd=WFINFO_DIR,
                                  env=clean_env_for_launch(), log_file=log_file)
             else:
-                launch_detached([str(WFINFO_DIR / "orbiter.exe")] + log_path_arg, cwd=WFINFO_DIR,
+                launch_detached([str(WFINFO_DIR / "orbiter.exe")] + log_path_arg + hotkey_args, cwd=WFINFO_DIR,
                                  log_file=log_file)
         except OSError as e:
             self.cmd_text.append(f"ERROR: failed to launch orbiter: {e}")

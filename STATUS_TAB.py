@@ -10,9 +10,13 @@ from glob import glob
 from pathlib import Path
 
 try:
-    from paths import get_ee_log_path, get_inventory_path, set_ee_log_path, set_inventory_path, describe_paths, DATA_DIR, WFINFO_DIR
+    from paths import (
+        get_ee_log_path, get_inventory_path, set_ee_log_path, set_inventory_path,
+        get_screenshot_hotkey, set_screenshot_hotkey, describe_paths, DATA_DIR, WFINFO_DIR,
+    )
 except Exception:
     get_ee_log_path = get_inventory_path = set_ee_log_path = set_inventory_path = describe_paths = None
+    get_screenshot_hotkey = set_screenshot_hotkey = None
 
 from PySide6.QtCore import Qt, QTimer, QProcess, QProcessEnvironment, QEvent
 from PySide6.QtGui import QFont
@@ -407,6 +411,20 @@ class StatusTab(QWidget):
             row.addWidget(lk); row.addWidget(edit, stretch=1)
             row.addWidget(brw); row.addWidget(status_lbl, stretch=1)
             pl.addLayout(row)
+
+        hotkey_row = QHBoxLayout()
+        hk_lbl = QLabel("Screenshot key:")
+        hk_lbl.setStyleSheet(f"color: {p['fg_dim']}; font-size: 12px; background: transparent;")
+        hk_lbl.setFixedWidth(120)
+        self._hotkey_edit = QLineEdit()
+        self._hotkey_edit.setPlaceholderText("F12")
+        self._hotkey_edit.setMaximumWidth(80)
+        hk_hint = QLabel("Change if F12 is already claimed by other software (Steam, GeForce Experience, Xbox Game Bar, VM guest tools, etc.)")
+        hk_hint.setStyleSheet(f"color: {p['fg_dim']}; font-size: 11px; background: transparent;")
+        hk_hint.setWordWrap(True)
+        hotkey_row.addWidget(hk_lbl); hotkey_row.addWidget(self._hotkey_edit)
+        hotkey_row.addWidget(hk_hint, stretch=1)
+        pl.addLayout(hotkey_row)
 
         save_row = QHBoxLayout()
         save_btn = self._action_btn("Save Paths", "Save path overrides to config.json")
@@ -821,6 +839,10 @@ class StatusTab(QWidget):
             else:
                 self._inv_path_status_lbl.setText(f"✗  Not found: {inv['path']}")
                 self._inv_path_status_lbl.setStyleSheet(f"font-size: 11px; color: {COLOR_BAD};")
+
+            if get_screenshot_hotkey is not None:
+                current_hotkey = get_screenshot_hotkey()
+                self._hotkey_edit.setText("" if current_hotkey == "F12" else current_hotkey)
         except Exception:
             pass
 
@@ -829,6 +851,8 @@ class StatusTab(QWidget):
             return
         set_ee_log_path(self._ee_path_edit.text())
         set_inventory_path(self._inv_path_edit.text())
+        if set_screenshot_hotkey is not None:
+            set_screenshot_hotkey(self._hotkey_edit.text())
         self._refresh_path_display()
         self.lbl_status.setText("Paths saved to config.json")
 
@@ -1080,15 +1104,22 @@ class StatusTab(QWidget):
             ee_path = get_ee_log_path()
             if ee_path is not None:
                 log_path_arg = [str(ee_path)]
+        # Some other software (Steam, GeForce Experience, Xbox Game Bar, VM
+        # guest tools, etc.) can claim F12 as a global hotkey first, which
+        # prevents orbiter from registering it at all - configurable via
+        # Settings instead of needing a code change to switch keys.
+        hotkey_args = []
+        if get_screenshot_hotkey is not None:
+            hotkey_args = ["--hotkey", get_screenshot_hotkey()]
         try:
             if IS_LINUX:
                 # launch-orbiter.sh handles Bazzite/gamescope-specific setup
                 # (DISPLAY detection, host libs, portal bus) that Windows
                 # simply doesn't need — there we can launch the exe directly.
-                launch_detached(["./launch-orbiter.sh"] + log_path_arg, cwd=WFINFO_DIR,
+                launch_detached(["./launch-orbiter.sh"] + log_path_arg + hotkey_args, cwd=WFINFO_DIR,
                                  env=clean_env_for_launch(), log_file=log_file)
             else:
-                launch_detached([str(WFINFO_DIR / "orbiter.exe")] + log_path_arg, cwd=WFINFO_DIR,
+                launch_detached([str(WFINFO_DIR / "orbiter.exe")] + log_path_arg + hotkey_args, cwd=WFINFO_DIR,
                                  log_file=log_file)
         except OSError as e:
             self.cmd_text.append(f"ERROR: failed to launch orbiter: {e}")

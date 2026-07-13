@@ -348,6 +348,7 @@ The control center: live status, data-refresh actions, overlay settings, file pa
 
 **File Paths:**
 - **EE.log** and **inventory.json** — leave blank to auto-detect, or use **Browse** to point at a non-standard location. A ✓/✗ label shows whether the currently-effective path actually exists
+- **Screenshot key** — leave blank for the default (F12). If the detector fails to start with an "already registered" hotkey error, some other software on your machine (Steam, GeForce Experience, Xbox Game Bar, VM guest tools, etc.) is likely already using F12 as a global hotkey — set a different key here instead (e.g. "F11")
 - **Save Paths** — writes any overrides you set
 
 **UI Theme:**

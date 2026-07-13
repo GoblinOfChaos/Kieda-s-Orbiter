@@ -298,6 +298,23 @@ def set_inventory_path(path_str: str):
     _save_config(cfg)
 
 
+def get_screenshot_hotkey() -> str:
+    """Return the configured screenshot-trigger hotkey, defaulting to F12.
+    Some other software (Steam, GeForce Experience, Xbox Game Bar, VM
+    guest tools, etc.) can claim F12 as a global hotkey first, which
+    prevents orbiter from registering it - this lets it be changed
+    without needing a code change."""
+    cfg = _load_config()
+    override = cfg.get("screenshot_hotkey", "")
+    return override.strip() if override and override.strip() else "F12"
+
+
+def set_screenshot_hotkey(key_str: str):
+    cfg = _load_config()
+    cfg["screenshot_hotkey"] = key_str.strip() if key_str.strip() else None
+    _save_config(cfg)
+
+
 def describe_paths() -> dict:
     """Return a dict of path descriptions for display in the UI."""
     ee = get_ee_log_path()

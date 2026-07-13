@@ -372,6 +372,14 @@ struct Arguments {
     /// some systems may require the window name to be specified (e.g. when using gamescope)
     #[arg(short, long, default_value = "Warframe")]
     window_name: String,
+    /// Global hotkey that triggers a screenshot capture
+    ///
+    /// F12 is the default, but some other software (Steam, GeForce
+    /// Experience, Xbox Game Bar, etc.) may already claim it as a global
+    /// hotkey, which prevents orbiter from registering it too. Change this
+    /// to any unclaimed key (e.g. "F11") if that happens.
+    #[arg(short = 'k', long, default_value = "F12")]
+    hotkey: String,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -426,7 +434,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let (event_sender, event_receiver) = channel();
 
     log_watcher(log_path, event_sender.clone());
-    hotkey_watcher("F12".parse()?, event_sender);
+    let hotkey = arguments.hotkey.parse().map_err(|e| {
+        format!("Invalid --hotkey value {:?}: {e:?} (expected something like \"F12\" or \"F11\")", arguments.hotkey)
+    })?;
+    hotkey_watcher(hotkey, event_sender);
 
     while let Ok(()) = event_receiver.recv() {
         info!("Capturing");
