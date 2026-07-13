@@ -808,20 +808,20 @@ class StatusTab(QWidget):
 
             self._ee_path_edit.setText("" if not ee["is_override"] else ee["path"])
             if ee["exists"]:
-                self._ee_status_lbl.setText(f"✓  Found: {ee['path']}")
-                self._ee_status_lbl.setStyleSheet(f"font-size: 11px; color: {COLOR_GREAT};")
+                self._ee_path_status_lbl.setText(f"✓  Found: {ee['path']}")
+                self._ee_path_status_lbl.setStyleSheet(f"font-size: 11px; color: {COLOR_GREAT};")
             else:
-                self._ee_status_lbl.setText(f"✗  Not found: {ee['path']}")
-                self._ee_status_lbl.setStyleSheet(f"font-size: 11px; color: {COLOR_BAD};")
+                self._ee_path_status_lbl.setText(f"✗  Not found: {ee['path']}")
+                self._ee_path_status_lbl.setStyleSheet(f"font-size: 11px; color: {COLOR_BAD};")
 
             self._inv_path_edit.setText("" if not inv["is_override"] else inv["path"])
             if inv["exists"]:
-                self._inv_status_lbl.setText(f"✓  Found: {inv['path']}")
-                self._inv_status_lbl.setStyleSheet(f"font-size: 11px; color: {COLOR_GREAT};")
+                self._inv_path_status_lbl.setText(f"✓  Found: {inv['path']}")
+                self._inv_path_status_lbl.setStyleSheet(f"font-size: 11px; color: {COLOR_GREAT};")
             else:
-                self._inv_status_lbl.setText(f"✗  Not found: {inv['path']}")
-                self._inv_status_lbl.setStyleSheet(f"font-size: 11px; color: {COLOR_BAD};")
-        except Exception as e:
+                self._inv_path_status_lbl.setText(f"✗  Not found: {inv['path']}")
+                self._inv_path_status_lbl.setStyleSheet(f"font-size: 11px; color: {COLOR_BAD};")
+        except Exception:
             pass
 
     def _save_paths(self):
