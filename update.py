@@ -31,6 +31,27 @@ MIN_ENTRIES_PRICES = 50
 MIN_ENTRIES_ITEMS  = 20
 
 
+def _entry_count(parsed) -> int:
+    """Count real content, not just top-level shape. prices.json is a flat
+    list, so len() works directly - but filtered_items.json is a dict of
+    a handful of category keys (relics/eqmt/ignored_items/...) with the
+    actual bulk of data nested one level inside each (confirmed live:
+    5 top-level keys, but 'eqmt' alone held 162 entries), so len() on the
+    dict itself massively undercounts it. Sum the nested container sizes
+    instead of just counting top-level keys."""
+    if isinstance(parsed, list):
+        return len(parsed)
+    if isinstance(parsed, dict):
+        total = 0
+        for v in parsed.values():
+            if isinstance(v, (list, dict)):
+                total += len(v)
+            else:
+                total += 1
+        return total
+    return 0
+
+
 def _download(url: str, dest: Path, min_entries: int) -> bool:
     """Download URL to dest. Returns True on success, False on failure."""
     print(f"  Downloading {dest.name}...", end="", flush=True)
@@ -54,7 +75,7 @@ def _download(url: str, dest: Path, min_entries: int) -> bool:
         print(f" FAIL (invalid JSON: {e})")
         return False
 
-    count = len(parsed) if isinstance(parsed, (list, dict)) else 0
+    count = _entry_count(parsed)
     if count < min_entries:
         print(f" FAIL (too few entries: {count}, expected >={min_entries})")
         return False
