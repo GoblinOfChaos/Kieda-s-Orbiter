@@ -240,6 +240,20 @@ if prices.exists() and items.exists():
     success("Data files already present")
     info("Run 'python update.py' any time to refresh prices and item data.")
 else:
+    # quick_update()'s synthesis fallback (used when api.warframestat.us's
+    # /wfinfo/* endpoints are down) builds prices/filtered_items FROM
+    # wfcd_all_cache.json - but on a fresh install that file doesn't exist
+    # yet either, so the fallback had nothing to fall back to. Fetch it
+    # first from WFCD's GitHub-hosted data (a separate, independent source
+    # from warframestat.us, so an outage on one doesn't take down both).
+    info("Fetching WFCD item cache (used as a fallback data source)...")
+    wfcd_result = subprocess.run(
+        [str(VENV_PYTHON), "refresh_wfcd_cache.py", "--force"],
+        cwd=str(WFINFO_DIR),
+    )
+    if wfcd_result.returncode != 0:
+        warn("Could not fetch WFCD cache — synthesis fallback won't have data to work with if the primary download fails below.")
+
     info("Downloading Warframe data (this may take a moment)...")
     # Use update_manager's quick_update, which falls back to local WFCD
     # synthesis if the direct download fails — more resilient than a single
