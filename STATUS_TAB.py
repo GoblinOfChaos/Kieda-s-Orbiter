@@ -14,7 +14,7 @@ try:
 except Exception:
     get_ee_log_path = get_inventory_path = set_ee_log_path = set_inventory_path = describe_paths = None
 
-from PySide6.QtCore import Qt, QTimer, QProcess, QEvent
+from PySide6.QtCore import Qt, QTimer, QProcess, QProcessEnvironment, QEvent
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QScrollArea,
@@ -934,6 +934,18 @@ class StatusTab(QWidget):
         self.process.finished.connect(self._step_finished)
         self.process.errorOccurred.connect(self._process_error)
         self.process.setWorkingDirectory(str(self._pending_cwd))
+        # Python defaults to block-buffering stdout when it isn't a real
+        # terminal (exactly the case here - QProcess captures it via a
+        # pipe), so print() output can sit unflushed for the entire run
+        # and only appear all at once right as the process exits. Seen
+        # live: "Fetch Live Prices" (a ~5 minute step with progress lines)
+        # showing zero output the whole time, looking exactly like a hang
+        # even though it was working the whole time. PYTHONUNBUFFERED
+        # forces every Python subprocess run through here to flush
+        # immediately instead.
+        proc_env = QProcessEnvironment.systemEnvironment()
+        proc_env.insert("PYTHONUNBUFFERED", "1")
+        self.process.setProcessEnvironment(proc_env)
         self.process.start(str(argv[0]), [str(a) for a in argv[1:]])
 
         # Some external tools (warframe-api-helper.exe in particular, seen
