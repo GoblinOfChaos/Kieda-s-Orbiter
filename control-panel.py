@@ -23,7 +23,7 @@ from PySide6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
     QPushButton, QLabel, QGroupBox, QFormLayout, QTextEdit, QMessageBox,
 )
-from paths import DATA_DIR, WFINFO_DIR, get_ee_log_path
+from paths import DATA_DIR, WFINFO_DIR, get_ee_log_path, get_inventory_path
 
 WFINFO_ICON = str(WFINFO_DIR / ("orbiter.ico" if sys.platform == "win32" else "orbiter.svg"))
 
@@ -290,18 +290,25 @@ class ControlPanel(QWidget):
             self._wfi_settings.setValue("geometry", self.saveGeometry())
         event.accept()
 
-    def _run_command(self, steps, cwd, description, on_success=None):
+    def _run_command(self, steps, cwd, description, on_success=None, timeout_ms=60_000):
         """Run a sequence of commands, each an argv list (e.g. [py, 'script.py',
         'arg']) — no shell involved, so this works identically on Linux and
         Windows. Stops the sequence on the first non-zero exit, mirroring
         what bash '&&' chaining did in the old single-string version.
-        on_success, if given, is called once after the whole chain exits 0."""
+        on_success, if given, is called once after the whole chain exits 0.
+
+        timeout_ms is a per-step force-kill timeout (see _check_step_timeout)
+        - defaults to 60s for typically-fast steps, but pass a longer value
+        for anything genuinely slow (e.g. warframe.market price fetching,
+        which legitimately takes ~5 minutes) so it isn't mistaken for the
+        same kind of hang and killed early."""
         if self.process and self.process.state() != QProcess.NotRunning:
             QMessageBox.warning(self, "Busy", "Another command is already running.")
             return
         self._pending_steps = [list(s) for s in steps]
         self._pending_cwd = cwd
         self._pending_on_success = on_success
+        self._pending_timeout_ms = timeout_ms
         self._set_buttons_enabled(False)
         self.lbl_status.setText(f"Running: {description}")
         self.cmd_text.clear()
@@ -329,9 +336,13 @@ class ControlPanel(QWidget):
         # on "Running:..." with every button disabled forever - QProcess
         # never emits 'finished' for a process that's still alive. Force-
         # kill anything that's still running after a generous timeout so a
-        # single misbehaving step can't hang the app.
+        # single misbehaving step can't hang the app. Timeout is per-command
+        # (see _run_command) so a legitimately slow step doesn't get killed
+        # for taking as long as it's supposed to.
         self._step_timeout_process = self.process
-        QTimer.singleShot(60_000, self._check_step_timeout)
+        timeout_ms = getattr(self, "_pending_timeout_ms", 60_000)
+        self._step_timeout_seconds = timeout_ms // 1000
+        QTimer.singleShot(timeout_ms, self._check_step_timeout)
 
     def _check_step_timeout(self):
         proc = self._step_timeout_process
@@ -339,7 +350,7 @@ class ControlPanel(QWidget):
             return  # already finished/replaced - nothing to do
         if proc.state() != QProcess.NotRunning:
             self.cmd_text.append(
-                "\n=== Step timed out after 60s, killing it and moving on ==="
+                f"\n=== Step timed out after {self._step_timeout_seconds}s, killing it and moving on ==="
             )
             proc.kill()
 
@@ -400,7 +411,11 @@ class ControlPanel(QWidget):
         self.cmd_text.append(f"Stopped {killed} running orbiter process(es).")
         # QTimer instead of time.sleep — this runs on the GUI thread, and a
         # real sleep() here would freeze the whole window for a few seconds.
-        QTimer.singleShot(1000, self._reload_config_launch)
+        # 2s (not 1s) gives Windows more headroom to fully release the killed
+        # process's global hotkey registration before the new one tries to
+        # claim it - seen live: relaunching too soon after a kill can still
+        # hit AlreadyRegistered even though the old process is already gone.
+        QTimer.singleShot(2000, self._reload_config_launch)
 
     def _reload_config_launch(self):
         from platform_utils import launch_detached, clean_env_for_launch, IS_LINUX
@@ -462,10 +477,26 @@ class ControlPanel(QWidget):
             return
 
         py = str(VENV_PYTHON)
+        # populate_owned.py takes a literal path argument - it has no idea
+        # about config.json's inventory_path override on its own, so this
+        # has to resolve it explicitly. Without this, "Save Paths" appeared
+        # to silently do nothing for inventory.json, because the saved
+        # override genuinely was being written to config.json correctly,
+        # it just wasn't being read by anything in this pipeline - the
+        # literal string "inventory.json" (relative to WFINFO_DIR) was
+        # used instead, every time, regardless of what was configured.
+        inv_path = str(get_inventory_path())
         self._run_command(
             [
-                [str(helper)],
-                [py, "populate_owned.py", "inventory.json", "owned_items.json"],
+                # Best-effort: if the helper fails (no Warframe running, no
+                # valid cached token - common on a machine where inventory.json
+                # was just copied over from elsewhere rather than fetched
+                # live), the existing inventory.json is still perfectly good
+                # for the rest of this chain, so don't abort the whole
+                # pipeline over it. Wrapped to always exit 0 regardless of
+                # the helper's own result.
+                [py, "-c", f"import subprocess; subprocess.run([{str(helper)!r}])"],
+                [py, "populate_owned.py", inv_path, "owned_items.json"],
                 [py, "populate_crafted.py"],
                 [py, "populate_relics.py"],
                 [py, "populate_equipment.py"],
@@ -489,6 +520,7 @@ class ControlPanel(QWidget):
             [[str(VENV_PYTHON), "enrich_prices_from_market.py"]],
             cwd=WFINFO_DIR, description="Fetch real prices from warframe.market",
             on_success=self.reload_config,
+            timeout_ms=600_000,  # this one legitimately takes ~5 minutes
         )
 
     def update_data(self):
