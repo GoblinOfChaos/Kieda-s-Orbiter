@@ -21,11 +21,17 @@ ITEMS_URL   = "https://api.warframestat.us/wfinfo/filtered_items/"
 
 HEADERS = {"User-Agent": "kiedas-orbiter/1.1"}
 
-MIN_SIZE_PRICES = 500_000   # sanity check: prices.json should be > 500KB
-MIN_SIZE_ITEMS  = 200_000   # filtered_items.json should be > 200KB
+# Sanity check thresholds, in entry count rather than raw byte size - a
+# byte-size floor rejects legitimately smaller-but-real responses (seen
+# live: warframestat.us returning a valid, real 67KB price list while
+# still recovering from an outage, well under the old 500KB assumption,
+# but genuinely good data). Entry count actually reflects whether the
+# response has real content, not just how verbose its formatting is.
+MIN_ENTRIES_PRICES = 50
+MIN_ENTRIES_ITEMS  = 20
 
 
-def _download(url: str, dest: Path, min_size: int) -> bool:
+def _download(url: str, dest: Path, min_entries: int) -> bool:
     """Download URL to dest. Returns True on success, False on failure."""
     print(f"  Downloading {dest.name}...", end="", flush=True)
     try:
@@ -39,15 +45,18 @@ def _download(url: str, dest: Path, min_size: int) -> bool:
         print(f" FAIL ({e})")
         return False
 
-    if len(data) < min_size:
-        print(f" FAIL (too small: {len(data)} bytes, expected >{min_size})")
-        return False
-
-    # Validate JSON
+    # Validate JSON first, then check it actually has meaningful content -
+    # a raw byte-size check can't tell a genuinely smaller-but-real
+    # response apart from a truncated/corrupt one, but entry count can.
     try:
-        json.loads(data)
+        parsed = json.loads(data)
     except json.JSONDecodeError as e:
         print(f" FAIL (invalid JSON: {e})")
+        return False
+
+    count = len(parsed) if isinstance(parsed, (list, dict)) else 0
+    if count < min_entries:
+        print(f" FAIL (too few entries: {count}, expected >={min_entries})")
         return False
 
     # Backup previous version
@@ -56,14 +65,14 @@ def _download(url: str, dest: Path, min_size: int) -> bool:
         dest.rename(backup)
 
     dest.write_bytes(data)
-    print(f" OK ({len(data):,} bytes)")
+    print(f" OK ({len(data):,} bytes, {count} entries)")
     return True
 
 
 def update():
     print("Updating Warframe data files...")
-    ok_prices = _download(PRICES_URL, WFINFO_DIR / "prices.json", MIN_SIZE_PRICES)
-    ok_items  = _download(ITEMS_URL,  WFINFO_DIR / "filtered_items.json", MIN_SIZE_ITEMS)
+    ok_prices = _download(PRICES_URL, WFINFO_DIR / "prices.json", MIN_ENTRIES_PRICES)
+    ok_items  = _download(ITEMS_URL,  WFINFO_DIR / "filtered_items.json", MIN_ENTRIES_ITEMS)
 
     if ok_prices and ok_items:
         print("\n✓ Data files updated successfully.")
