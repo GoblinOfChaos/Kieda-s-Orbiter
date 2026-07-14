@@ -17,11 +17,20 @@ def _version_tuple(v):
     return tuple(parts) or (0,)
 
 
-def check_for_update(current_version_path="VERSION", repo="GoblinOfChaos/Kiedas-Orbiter", timeout=8):
+def check_for_update(current_version_path=None, repo="GoblinOfChaos/Kiedas-Orbiter", timeout=8):
     """Returns a dict {"current": str, "latest": str, "url": str} if a newer
     version is available on GitHub, or None if up to date / check failed.
     Never raises - any network/parse error just returns None."""
     try:
+        # Bare "VERSION" resolves against the process's current working
+        # directory, not this script's own location - if the app is ever
+        # launched from a different cwd (a desktop shortcut, systemd
+        # service, shell alias, etc. that doesn't cd into the app dir
+        # first), that lookup silently fails even though VERSION is right
+        # here. Default to an absolute path instead; still overridable by
+        # callers/tests that pass their own path explicitly.
+        if current_version_path is None:
+            current_version_path = Path(__file__).parent / "VERSION"
         p = Path(current_version_path)
         current = p.read_text().strip() if p.exists() else "unknown"
 
